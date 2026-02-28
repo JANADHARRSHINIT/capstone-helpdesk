@@ -18,11 +18,11 @@ function Chatbot() {
     e.preventDefault();
     if (!input.trim()) return;
 
-    setMessages(prev => [...prev, { text: input, sender: 'user' }]);
+    setMessages((prev) => [...prev, { text: input, sender: 'user' }]);
+    const key = Object.keys(chatbotResponses).find((k) => input.toLowerCase().includes(k)) || 'default';
 
-    const key = Object.keys(chatbotResponses).find(k => input.toLowerCase().includes(k)) || 'default';
     setTimeout(() => {
-      setMessages(prev => [...prev, { text: chatbotResponses[key], sender: 'bot' }]);
+      setMessages((prev) => [...prev, { text: chatbotResponses[key], sender: 'bot' }]);
     }, 500);
 
     setInput('');
@@ -32,7 +32,7 @@ function Chatbot() {
     <>
       {!isOpen && (
         <button className="chatbot-button" onClick={() => setIsOpen(true)}>
-          💬
+          &#128172;
         </button>
       )}
 
@@ -43,7 +43,7 @@ function Chatbot() {
               <span className="chatbot-status"></span>
               <span>IT Support Bot</span>
             </div>
-            <button className="chatbot-close" onClick={() => setIsOpen(false)}>×</button>
+            <button className="chatbot-close" onClick={() => setIsOpen(false)}>&times;</button>
           </div>
 
           <div className="chatbot-messages">

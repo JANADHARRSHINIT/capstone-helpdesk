@@ -1,24 +1,34 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import Chatbot from '../components/Chatbot';
-import { tickets } from '../data/mockData';
+import { fetchTickets } from '../services/api';
 import './Issues.css';
 
 function Issues() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [priorityFilter, setPriorityFilter] = useState('ALL');
+  const [tickets, setTickets] = useState([]);
   const user = JSON.parse(localStorage.getItem('user'));
   const navigate = useNavigate();
 
-  let filteredTickets = tickets;
-  if (statusFilter !== 'ALL') filteredTickets = filteredTickets.filter(t => t.status === statusFilter);
-  if (priorityFilter !== 'ALL') filteredTickets = filteredTickets.filter(t => t.priority === priorityFilter);
-  if (search) filteredTickets = filteredTickets.filter(t => 
-    t.id.toString().includes(search) || t.customerName.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    const loadTickets = async () => {
+      try {
+        const data = await fetchTickets({
+          status: statusFilter,
+          priority: priorityFilter,
+          search
+        });
+        setTickets(data);
+      } catch (error) {
+        alert(error.message || 'Failed to load tickets');
+      }
+    };
+    loadTickets();
+  }, [statusFilter, priorityFilter, search]);
 
   const getPriorityClass = (priority) => {
     if (priority === 'HIGH') return 'badge-high';
@@ -78,7 +88,7 @@ function Issues() {
                 </tr>
               </thead>
               <tbody>
-                {filteredTickets.map(ticket => (
+                {tickets.map(ticket => (
                   <tr key={ticket.id}>
                     <td>#{ticket.id}</td>
                     <td>{ticket.customerName}</td>

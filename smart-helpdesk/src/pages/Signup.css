@@ -92,6 +92,27 @@
   background: white;
 }
 
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 70px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #2563EB;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0;
+}
+
 .signup-form input:focus,
 .signup-form select:focus {
   outline: none;

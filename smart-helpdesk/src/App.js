@@ -15,12 +15,14 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/" element={<Navigate to="/dashboard" />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/analytics" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/issues" element={<ProtectedRoute><Issues /></ProtectedRoute>} />
         <Route path="/ticket/:id" element={<ProtectedRoute><TicketDetail /></ProtectedRoute>} />
         <Route path="/my-issues" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/users" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>
     </BrowserRouter>
   );

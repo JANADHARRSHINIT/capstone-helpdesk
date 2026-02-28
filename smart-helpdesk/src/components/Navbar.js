@@ -18,11 +18,11 @@ function Navbar({ title, userName }) {
       <div className="navbar-right">
         <div className="navbar-search">
           <input type="text" placeholder="Search..." />
-          <span className="search-icon">🔍</span>
+          <span className="search-icon" aria-hidden="true">&#128269;</span>
         </div>
 
-        <button className="navbar-notification">
-          <span>🔔</span>
+        <button className="navbar-notification" aria-label="Notifications">
+          <span aria-hidden="true">&#128276;</span>
           <span className="notification-badge">3</span>
         </button>
 
@@ -35,7 +35,7 @@ function Navbar({ title, userName }) {
           {showDropdown && (
             <div className="profile-dropdown">
               <button onClick={handleLogout} className="dropdown-item">
-                <span>🚪</span>
+                <span aria-hidden="true">&#128682;</span>
                 <span>Logout</span>
               </button>
             </div>

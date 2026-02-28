@@ -1,29 +1,79 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { users } from '../data/mockData';
+import { demoLogin, fetchPermissions, login } from '../services/api';
 import './Login.css';
+
+const AUTH_DISABLED = process.env.REACT_APP_DISABLE_AUTH === 'true';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const user = users.find(u => u.email === email);
-    if (user) {
+    try {
+      setLoading(true);
+      if (AUTH_DISABLED) {
+        const fallbackUser = {
+          id: Date.now(),
+          name: email?.split('@')[0] || 'Local User',
+          email: email || 'local@helpdesk.dev',
+          role: 'ADMIN'
+        };
+        localStorage.setItem('user', JSON.stringify(fallbackUser));
+        localStorage.setItem('permissions', JSON.stringify({}));
+        navigate('/dashboard');
+        return;
+      }
+
+      const user = await login(email, password);
       localStorage.setItem('user', JSON.stringify(user));
+      try {
+        const permissions = await fetchPermissions(user.role);
+        localStorage.setItem('permissions', JSON.stringify(permissions.modules));
+      } catch (_) {
+        localStorage.setItem('permissions', JSON.stringify({}));
+      }
       navigate('/dashboard');
-    } else {
-      alert('Invalid credentials');
+    } catch (error) {
+      alert(error.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const quickLogin = (role) => {
-    const user = users.find(u => u.role === role);
-    if (user) {
+  const quickLogin = async (role) => {
+    try {
+      setLoading(true);
+      if (AUTH_DISABLED) {
+        const fallbackUser = {
+          id: Date.now(),
+          name: `${role} Local`,
+          email: `${role.toLowerCase()}@helpdesk.dev`,
+          role
+        };
+        localStorage.setItem('user', JSON.stringify(fallbackUser));
+        localStorage.setItem('permissions', JSON.stringify({}));
+        navigate('/dashboard');
+        return;
+      }
+
+      const user = await demoLogin(role);
       localStorage.setItem('user', JSON.stringify(user));
+      try {
+        const permissions = await fetchPermissions(user.role);
+        localStorage.setItem('permissions', JSON.stringify(permissions.modules));
+      } catch (_) {
+        localStorage.setItem('permissions', JSON.stringify({}));
+      }
       navigate('/dashboard');
+    } catch (error) {
+      alert(error.message || 'Quick login failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -31,13 +81,13 @@ function Login() {
     <div className="login-container">
       <div className="login-left">
         <div className="login-left-content">
-          <h1 className="login-brand">🛠️ IT HelpDesk</h1>
+          <h1 className="login-brand">&#128736;&#65039; IT HelpDesk</h1>
           <p className="login-tagline">Your Complete IT Support Solution</p>
           <ul className="login-features">
-            <li>✓ 24/7 Ticket Management</li>
-            <li>✓ Real-time Status Updates</li>
-            <li>✓ AI-Powered Chatbot</li>
-            <li>✓ Priority-based Resolution</li>
+            <li>&#10003; 24/7 Ticket Management</li>
+            <li>&#10003; Real-time Status Updates</li>
+            <li>&#10003; AI-Powered Chatbot</li>
+            <li>&#10003; Priority-based Resolution</li>
           </ul>
         </div>
       </div>
@@ -61,13 +111,22 @@ function Login() {
 
             <div className="form-group">
               <label>Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                required
-              />
+              <div className="password-field">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </div>
 
             <div className="form-options">
@@ -75,10 +134,12 @@ function Login() {
                 <input type="checkbox" />
                 <span>Remember me</span>
               </label>
-              <a href="#" className="forgot-link">Forgot password?</a>
+              <button type="button" className="forgot-link">Forgot password?</button>
             </div>
 
-            <button type="submit" className="login-btn">Sign In</button>
+            <button type="submit" className="login-btn" disabled={loading}>
+              {loading ? 'Signing In...' : 'Sign In'}
+            </button>
           </form>
 
           <div className="login-divider">
@@ -86,13 +147,13 @@ function Login() {
           </div>
 
           <div className="quick-login-btns">
-            <button onClick={() => quickLogin('ADMIN')} className="quick-btn admin">Admin</button>
-            <button onClick={() => quickLogin('EMPLOYEE')} className="quick-btn employee">Employee</button>
-            <button onClick={() => quickLogin('CUSTOMER')} className="quick-btn customer">Customer</button>
+            <button onClick={() => quickLogin('ADMIN')} className="quick-btn admin" disabled={loading}>Admin</button>
+            <button onClick={() => quickLogin('EMPLOYEE')} className="quick-btn employee" disabled={loading}>Employee</button>
+            <button onClick={() => quickLogin('USER')} className="quick-btn customer" disabled={loading}>User</button>
           </div>
 
           <p className="signup-link">
-            Don't have an account? <a href="/signup">Sign up</a>
+            Don&apos;t have an account? <a href="/signup">Sign up</a>
           </p>
         </div>
       </div>

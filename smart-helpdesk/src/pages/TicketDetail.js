@@ -1,44 +1,81 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import Chatbot from '../components/Chatbot';
-import { tickets, users } from '../data/mockData';
 import { formatDate } from '../utils/helpers';
+import { addTicketComment, assignTicket, fetchTicketById, fetchUsers, updateTicketStatus } from '../services/api';
 import './TicketDetail.css';
 
 function TicketDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
-  const ticket = tickets.find(t => t.id === parseInt(id));
-  const employees = users.filter(u => u.role === 'EMPLOYEE');
 
+  const [ticket, setTicket] = useState(null);
+  const [employees, setEmployees] = useState([]);
   const [reply, setReply] = useState('');
-  const [status, setStatus] = useState(ticket?.status || 'OPEN');
-  const [assignedEmployee, setAssignedEmployee] = useState(ticket?.assignedEmployeeId || '');
+  const [status, setStatus] = useState('OPEN');
+  const [assignedEmployee, setAssignedEmployee] = useState('');
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [ticketData, employeeData] = await Promise.all([
+          fetchTicketById(id),
+          fetchUsers('EMPLOYEE')
+        ]);
+        setTicket(ticketData);
+        setStatus(ticketData.status);
+        setAssignedEmployee(ticketData.assignedEmployeeId || '');
+        setEmployees(employeeData);
+      } catch (error) {
+        alert(error.message || 'Failed to load ticket');
+      }
+    };
+    loadData();
+  }, [id]);
 
   if (!ticket) {
-    return <div>Ticket not found</div>;
+    return <div>Loading ticket...</div>;
   }
 
-  const handleReply = (e) => {
+  const handleReply = async (e) => {
     e.preventDefault();
-    if (reply.trim()) {
-      alert('Reply added: ' + reply);
+    if (!reply.trim()) return;
+    try {
+      await addTicketComment(ticket.id, user.id, reply.trim());
+      const updated = await fetchTicketById(id);
+      setTicket(updated);
       setReply('');
+    } catch (error) {
+      alert(error.message || 'Failed to add reply');
     }
   };
 
-  const handleStatusChange = (newStatus) => {
-    setStatus(newStatus);
-    alert('Status updated to: ' + newStatus);
+  const handleStatusChange = async (newStatus) => {
+    try {
+      await updateTicketStatus(ticket.id, newStatus);
+      setStatus(newStatus);
+      setTicket((prev) => ({ ...prev, status: newStatus }));
+    } catch (error) {
+      alert(error.message || 'Failed to update status');
+    }
   };
 
-  const handleAssignEmployee = (employeeId) => {
-    setAssignedEmployee(employeeId);
-    const employee = employees.find(e => e.id === parseInt(employeeId));
-    alert('Ticket assigned to: ' + employee?.name);
+  const handleAssignEmployee = async (employeeId) => {
+    try {
+      await assignTicket(ticket.id, employeeId || null);
+      setAssignedEmployee(employeeId);
+      const employee = employees.find((emp) => emp.id === parseInt(employeeId, 10));
+      setTicket((prev) => ({
+        ...prev,
+        assignedEmployeeId: employeeId || null,
+        assignedEmployeeName: employee ? employee.name : null
+      }));
+    } catch (error) {
+      alert(error.message || 'Failed to assign employee');
+    }
   };
 
   const getPriorityClass = (priority) => {
@@ -47,22 +84,22 @@ function TicketDetail() {
     return 'badge-low';
   };
 
-  const getStatusClass = (status) => {
-    if (status === 'OPEN') return 'badge-open';
-    if (status === 'IN_PROGRESS') return 'badge-progress';
-    if (status === 'RESOLVED') return 'badge-resolved';
+  const getStatusClass = (value) => {
+    if (value === 'OPEN') return 'badge-open';
+    if (value === 'IN_PROGRESS') return 'badge-progress';
+    if (value === 'RESOLVED') return 'badge-resolved';
     return 'badge-closed';
   };
 
   return (
     <div className="dashboard-layout">
       <Sidebar role={user.role} />
-      
+
       <div className="dashboard-main">
         <Navbar title="Ticket Details" userName={user.name} />
-        
+
         <div className="dashboard-content">
-          <button onClick={() => navigate(-1)} className="back-btn">← Back</button>
+          <button onClick={() => navigate(-1)} className="back-btn">&#8592; Back</button>
 
           <div className="ticket-detail-grid">
             <div className="ticket-detail-left">
@@ -100,7 +137,7 @@ function TicketDetail() {
                   {ticket.comments.length === 0 ? (
                     <p className="no-comments">No comments yet</p>
                   ) : (
-                    ticket.comments.map(comment => (
+                    ticket.comments.map((comment) => (
                       <div key={comment.id} className="comment-item">
                         <div className="comment-header">
                           <strong>{comment.userName}</strong>
@@ -144,7 +181,7 @@ function TicketDetail() {
                     <label>Assign Employee</label>
                     <select value={assignedEmployee} onChange={(e) => handleAssignEmployee(e.target.value)}>
                       <option value="">Unassigned</option>
-                      {employees.map(emp => (
+                      {employees.map((emp) => (
                         <option key={emp.id} value={emp.id}>{emp.name}</option>
                       ))}
                     </select>

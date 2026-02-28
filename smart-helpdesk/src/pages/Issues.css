@@ -1,7 +1,7 @@
 .issues-header {
   display: flex;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 18px;
   flex-wrap: wrap;
 }
 
@@ -9,37 +9,31 @@
   flex: 1;
   min-width: 250px;
   padding: 10px 16px;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
+  border: 1px solid var(--line-soft);
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 12px;
   font-size: 14px;
-  transition: all 0.3s ease;
-}
-
-.search-input:focus {
-  border-color: #3B5BDB;
-  box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.1);
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .filter-select {
   padding: 10px 16px;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
   font-size: 14px;
-  background: white;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text-primary);
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.filter-select:focus {
-  border-color: #3B5BDB;
-  box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.1);
 }
 
 .issues-table-container {
-  background: white;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 16px;
+  border: 1px solid var(--line-soft);
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-soft);
 }
 
 .issues-table {
@@ -48,85 +42,88 @@
 }
 
 .issues-table thead {
-  background: #EDF2FF;
+  background: #e9f2fe;
 }
 
 .issues-table th {
   padding: 14px 16px;
   text-align: left;
   font-size: 12px;
-  font-weight: 600;
-  color: #64748B;
+  font-weight: 800;
+  color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.06em;
 }
 
 .issues-table td {
   padding: 14px 16px;
-  border-bottom: 1px solid #E2E8F0;
+  border-bottom: 1px solid #e3edf8;
   font-size: 14px;
-  color: #1E293B;
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 .issues-table tbody tr:hover {
-  background: #F1F5FF;
+  background: #f1f7ff;
 }
 
 .badge {
-  padding: 4px 10px;
+  padding: 5px 10px;
   border-radius: 20px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   display: inline-block;
 }
 
 .badge-high {
-  background: #FEE2E2;
-  color: #EF4444;
+  background: #fee2e2;
+  color: var(--danger);
 }
 
 .badge-medium {
-  background: #FEF3C7;
-  color: #F59E0B;
+  background: #ffedd5;
+  color: var(--warning);
 }
 
 .badge-low {
-  background: #DCFCE7;
-  color: #22C55E;
+  background: #dcfce7;
+  color: var(--success);
 }
 
 .badge-open {
-  background: #E8ECFF;
-  color: #3B5BDB;
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .badge-progress {
-  background: #F3E8FF;
-  color: #8B5CF6;
+  background: #cffafe;
+  color: #0e7490;
 }
 
 .badge-resolved {
-  background: #DCFCE7;
-  color: #22C55E;
+  background: #dcfce7;
+  color: var(--success);
 }
 
 .badge-closed {
-  background: #F1F5F9;
-  color: #64748B;
+  background: #e2e8f0;
+  color: #334155;
 }
 
 .view-btn {
-  background: transparent;
-  color: #3B5BDB;
-  font-weight: 500;
+  background: #eff6ff;
+  color: var(--brand-strong);
+  border: 1px solid #bfdbfe;
+  font-weight: 700;
   font-size: 14px;
   padding: 6px 12px;
-  border-radius: 6px;
-  transition: all 0.3s ease;
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
 
 .view-btn:hover {
-  background: #E8ECFF;
+  background: #dbeafe;
 }
 
 @media (max-width: 768px) {

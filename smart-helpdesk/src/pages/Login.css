@@ -111,14 +111,43 @@
   cursor: pointer;
 }
 
+.checkbox-label input {
+  width: auto;
+  margin: 0;
+}
+
 .forgot-link {
   font-size: 14px;
   color: #3B5BDB;
   font-weight: 500;
+  background: transparent;
+  border: none;
+  padding: 0;
 }
 
 .forgot-link:hover {
   text-decoration: underline;
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 70px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #3B5BDB;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0;
 }
 
 .login-btn {
