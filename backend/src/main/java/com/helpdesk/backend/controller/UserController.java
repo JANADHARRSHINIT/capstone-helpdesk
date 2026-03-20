@@ -26,6 +26,6 @@ public class UserController {
     }
 
     private UserResponse toResponse(com.helpdesk.backend.model.UserEntity user) {
-        return new UserResponse(user.getId(), user.getName(), user.getEmail(), user.getRole());
+        return new UserResponse(user.getId(), user.getName(), user.getEmail(), user.getRole(), user.getTeam());
     }
 }

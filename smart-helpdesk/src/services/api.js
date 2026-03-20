@@ -67,6 +67,13 @@ export function updateTicketStatus(id, status) {
   });
 }
 
+export function updateTicketPriority(id, priority) {
+  return apiRequest(`/tickets/${id}/priority`, {
+    method: 'PUT',
+    body: JSON.stringify({ priority })
+  });
+}
+
 export function assignTicket(id, employeeId) {
   return apiRequest(`/tickets/${id}/assign`, {
     method: 'PUT',
@@ -88,4 +95,11 @@ export function fetchUsers(role) {
 
 export function fetchPermissions(role) {
   return apiRequest(`/permissions/${role}`);
+}
+
+export function createTicket(payload) {
+  return apiRequest('/tickets', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
 }

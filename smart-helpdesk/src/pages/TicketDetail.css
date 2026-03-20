@@ -280,6 +280,15 @@
   margin: 0;
 }
 
+.team-badge {
+  background: #EFF6FF;
+  color: #2563EB;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  display: inline-block;
+}
+
 @media (max-width: 1024px) {
   .ticket-detail-grid {
     grid-template-columns: 1fr;

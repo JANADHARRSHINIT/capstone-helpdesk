@@ -2,10 +2,13 @@ package com.helpdesk.backend.controller;
 
 import static com.helpdesk.backend.dto.TicketDtos.AddCommentRequest;
 import static com.helpdesk.backend.dto.TicketDtos.AssignTicketRequest;
+import static com.helpdesk.backend.dto.TicketDtos.CreateTicketRequest;
 import static com.helpdesk.backend.dto.TicketDtos.TicketCommentResponse;
 import static com.helpdesk.backend.dto.TicketDtos.TicketDetailResponse;
 import static com.helpdesk.backend.dto.TicketDtos.TicketSummaryResponse;
 import static com.helpdesk.backend.dto.TicketDtos.UpdateStatusRequest;
+import static com.helpdesk.backend.dto.TicketDtos.UpdatePriorityRequest;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,9 +25,14 @@ import com.helpdesk.backend.model.TicketEntity;
 import com.helpdesk.backend.model.TicketPriority;
 import com.helpdesk.backend.model.TicketStatus;
 import com.helpdesk.backend.model.UserEntity;
+import com.helpdesk.backend.model.AuditLogEntity;
+import com.helpdesk.backend.model.SLAPolicyEntity;
 import com.helpdesk.backend.repository.TicketCommentRepository;
 import com.helpdesk.backend.repository.TicketRepository;
 import com.helpdesk.backend.repository.UserRepository;
+import com.helpdesk.backend.repository.AuditLogRepository;
+import com.helpdesk.backend.repository.SLAPolicyRepository;
+import com.helpdesk.backend.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -35,6 +43,35 @@ public class TicketController {
     private final TicketRepository ticketRepository;
     private final TicketCommentRepository commentRepository;
     private final UserRepository userRepository;
+    private final AuditLogRepository auditLogRepository;
+    private final SLAPolicyRepository slaPolicyRepository;
+    private final NotificationService notificationService;
+
+    @PostMapping
+    public TicketSummaryResponse createTicket(@RequestBody CreateTicketRequest request) {
+        UserEntity requester = userRepository.findById(request.requesterId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        LocalDateTime slaDeadline = calculateSLADeadline(request.priority());
+
+        TicketEntity ticket = TicketEntity.builder()
+                .requester(requester)
+                .issueType(request.issueType())
+                .description(request.description())
+                .priority(request.priority())
+                .status(TicketStatus.OPEN)
+                .slaDeadline(slaDeadline)
+                .escalationLevel(0)
+                .build();
+
+        return toSummary(ticketRepository.save(ticket));
+    }
+
+    private LocalDateTime calculateSLADeadline(TicketPriority priority) {
+        return slaPolicyRepository.findByPriorityAndActiveTrue(priority)
+                .map(policy -> LocalDateTime.now().plusHours(policy.getResolutionTimeHours()))
+                .orElse(LocalDateTime.now().plusDays(3));
+    }
 
     @GetMapping
     public List<TicketSummaryResponse> listTickets(
@@ -86,7 +123,34 @@ public class TicketController {
     @PutMapping("/{id}/status")
     public TicketSummaryResponse updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest request) {
         TicketEntity ticket = findTicket(id);
+        String oldStatus = ticket.getStatus().toString();
         ticket.setStatus(request.status());
+        
+        auditLogRepository.save(AuditLogEntity.builder()
+                .action("STATUS_CHANGE")
+                .entityType("TICKET")
+                .entityId(id)
+                .performedBy("SYSTEM")
+                .details("Status changed from " + oldStatus + " to " + request.status())
+                .build());
+        
+        return toSummary(ticketRepository.save(ticket));
+    }
+
+    @PutMapping("/{id}/priority")
+    public TicketSummaryResponse updatePriority(@PathVariable Long id, @RequestBody UpdatePriorityRequest request) {
+        TicketEntity ticket = findTicket(id);
+        String oldPriority = ticket.getPriority().toString();
+        ticket.setPriority(request.priority());
+        
+        auditLogRepository.save(AuditLogEntity.builder()
+                .action("PRIORITY_CHANGE")
+                .entityType("TICKET")
+                .entityId(id)
+                .performedBy("ADMIN")
+                .details("Priority changed from " + oldPriority + " to " + request.priority())
+                .build());
+        
         return toSummary(ticketRepository.save(ticket));
     }
 
@@ -94,11 +158,32 @@ public class TicketController {
     public TicketSummaryResponse assignTicket(@PathVariable Long id, @RequestBody AssignTicketRequest request) {
         TicketEntity ticket = findTicket(id);
         UserEntity employee = null;
+        String oldAssignment = ticket.getAssignedEmployee() != null ? ticket.getAssignedEmployee().getName() : "Unassigned";
+        
         if (request.employeeId() != null) {
             employee = userRepository.findById(request.employeeId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found"));
         }
         ticket.setAssignedEmployee(employee);
+        
+        String newAssignment = employee != null ? employee.getName() : "Unassigned";
+        auditLogRepository.save(AuditLogEntity.builder()
+                .action("TICKET_ASSIGNMENT")
+                .entityType("TICKET")
+                .entityId(id)
+                .performedBy("ADMIN")
+                .details("Ticket reassigned from " + oldAssignment + " to " + newAssignment)
+                .build());
+        
+        if (employee != null) {
+            notificationService.createNotification(
+                employee,
+                "New Ticket Assigned",
+                "Ticket #" + id + " has been assigned to you",
+                id
+            );
+        }
+        
         return toSummary(ticketRepository.save(ticket));
     }
 

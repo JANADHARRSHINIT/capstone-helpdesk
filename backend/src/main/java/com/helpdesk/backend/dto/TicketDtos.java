@@ -54,8 +54,19 @@ public class TicketDtos {
             TicketStatus status
     ) {}
 
+    public record UpdatePriorityRequest(
+            TicketPriority priority
+    ) {}
+
     public record AssignTicketRequest(
             Long employeeId
+    ) {}
+
+    public record CreateTicketRequest(
+            Long requesterId,
+            IssueType issueType,
+            String description,
+            TicketPriority priority
     ) {}
 
     public record AnalyticsResponse(

@@ -8,6 +8,7 @@ import com.helpdesk.backend.model.TicketStatus;
 
 public interface TicketRepository extends JpaRepository<TicketEntity, Long> {
     List<TicketEntity> findByStatus(TicketStatus status);
+    List<TicketEntity> findByStatusIn(List<TicketStatus> statuses);
     List<TicketEntity> findByPriority(TicketPriority priority);
     List<TicketEntity> findByStatusAndPriority(TicketStatus status, TicketPriority priority);
 }

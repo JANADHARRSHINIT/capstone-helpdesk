@@ -3,7 +3,11 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Issues from './pages/Issues';
+import MyIssues from './pages/MyIssues';
 import TicketDetail from './pages/TicketDetail';
+import Settings from './pages/Settings';
+import Users from './pages/Users';
+import Reports from './pages/Reports';
 import ProtectedRoute from './components/ProtectedRoute';
 import './styles/global.css';
 
@@ -17,11 +21,11 @@ function App() {
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/analytics" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/issues" element={<ProtectedRoute><Issues /></ProtectedRoute>} />
+        <Route path="/my-issues" element={<ProtectedRoute><MyIssues /></ProtectedRoute>} />
         <Route path="/ticket/:id" element={<ProtectedRoute><TicketDetail /></ProtectedRoute>} />
-        <Route path="/my-issues" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/users" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/reports" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
+        <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>
     </BrowserRouter>

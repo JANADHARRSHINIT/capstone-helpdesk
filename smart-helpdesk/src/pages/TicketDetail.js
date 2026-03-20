@@ -4,7 +4,7 @@ import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import Chatbot from '../components/Chatbot';
 import { formatDate } from '../utils/helpers';
-import { addTicketComment, assignTicket, fetchTicketById, fetchUsers, updateTicketStatus } from '../services/api';
+import { addTicketComment, assignTicket, fetchTicketById, fetchUsers, updateTicketStatus, updateTicketPriority } from '../services/api';
 import './TicketDetail.css';
 
 function TicketDetail() {
@@ -14,8 +14,10 @@ function TicketDetail() {
 
   const [ticket, setTicket] = useState(null);
   const [employees, setEmployees] = useState([]);
+  const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [reply, setReply] = useState('');
   const [status, setStatus] = useState('OPEN');
+  const [priority, setPriority] = useState('LOW');
   const [assignedEmployee, setAssignedEmployee] = useState('');
 
   useEffect(() => {
@@ -27,8 +29,15 @@ function TicketDetail() {
         ]);
         setTicket(ticketData);
         setStatus(ticketData.status);
+        setPriority(ticketData.priority);
         setAssignedEmployee(ticketData.assignedEmployeeId || '');
         setEmployees(employeeData);
+        
+        // Filter employees by team matching issue type
+        const teamMatch = employeeData.filter(emp => 
+          emp.team && emp.team === ticketData.issueType
+        );
+        setFilteredEmployees(teamMatch.length > 0 ? teamMatch : employeeData);
       } catch (error) {
         alert(error.message || 'Failed to load ticket');
       }
@@ -60,6 +69,16 @@ function TicketDetail() {
       setTicket((prev) => ({ ...prev, status: newStatus }));
     } catch (error) {
       alert(error.message || 'Failed to update status');
+    }
+  };
+
+  const handlePriorityChange = async (newPriority) => {
+    try {
+      await updateTicketPriority(ticket.id, newPriority);
+      setPriority(newPriority);
+      setTicket((prev) => ({ ...prev, priority: newPriority }));
+    } catch (error) {
+      alert(error.message || 'Failed to update priority');
     }
   };
 
@@ -178,14 +197,45 @@ function TicketDetail() {
 
                 {user.role === 'ADMIN' && (
                   <div className="action-group">
-                    <label>Assign Employee</label>
-                    <select value={assignedEmployee} onChange={(e) => handleAssignEmployee(e.target.value)}>
-                      <option value="">Unassigned</option>
-                      {employees.map((emp) => (
-                        <option key={emp.id} value={emp.id}>{emp.name}</option>
-                      ))}
+                    <label>Change Priority</label>
+                    <select value={priority} onChange={(e) => handlePriorityChange(e.target.value)}>
+                      <option value="HIGH">High</option>
+                      <option value="MEDIUM">Medium</option>
+                      <option value="LOW">Low</option>
                     </select>
                   </div>
+                )}
+
+                {user.role === 'ADMIN' && (
+                  <>
+                    <div className="action-group">
+                      <label>Recommended Team</label>
+                      <p className="info-text team-badge">{ticket.issueType} Team</p>
+                    </div>
+                    
+                    <div className="action-group">
+                      <label>Assign Employee</label>
+                      <select value={assignedEmployee} onChange={(e) => handleAssignEmployee(e.target.value)}>
+                        <option value="">Unassigned</option>
+                        <optgroup label="Recommended ({ticket.issueType} Team)">
+                          {filteredEmployees.map((emp) => (
+                            <option key={emp.id} value={emp.id}>
+                              {emp.name} ({emp.team || 'No Team'})
+                            </option>
+                          ))}
+                        </optgroup>
+                        {filteredEmployees.length < employees.length && (
+                          <optgroup label="Other Employees">
+                            {employees.filter(emp => !filteredEmployees.includes(emp)).map((emp) => (
+                              <option key={emp.id} value={emp.id}>
+                                {emp.name} ({emp.team || 'No Team'})
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </select>
+                    </div>
+                  </>
                 )}
 
                 <div className="action-group">

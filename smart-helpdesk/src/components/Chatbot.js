@@ -1,31 +1,119 @@
 import { useState, useRef, useEffect } from 'react';
-import { chatbotResponses } from '../data/mockData';
+import { createTicket } from '../services/api';
 import './Chatbot.css';
 
-function Chatbot() {
+function Chatbot({ onTicketCreated }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { text: 'Hi! I\'m your IT support assistant. How can I help you?', sender: 'bot' }
+    { text: 'Hi! I\'m your IT support assistant. How can I help you today?', sender: 'bot' }
   ]);
   const [input, setInput] = useState('');
+  const [awaitingTicket, setAwaitingTicket] = useState(false);
+  const [ticketData, setTicketData] = useState({});
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = (e) => {
+  const detectIssueType = (text) => {
+    const lower = text.toLowerCase();
+    if (lower.includes('network') || lower.includes('internet') || lower.includes('wifi') || lower.includes('vpn')) return 'NETWORK';
+    if (lower.includes('software') || lower.includes('application') || lower.includes('app') || lower.includes('email')) return 'SOFTWARE';
+    if (lower.includes('hardware') || lower.includes('laptop') || lower.includes('printer') || lower.includes('mouse') || lower.includes('keyboard')) return 'HARDWARE';
+    return 'SOFTWARE';
+  };
+
+  const detectPriority = (text) => {
+    const lower = text.toLowerCase();
+    if (lower.includes('urgent') || lower.includes('critical') || lower.includes('asap') || lower.includes('immediately')) return 'HIGH';
+    if (lower.includes('soon') || lower.includes('important')) return 'MEDIUM';
+    return 'LOW';
+  };
+
+  const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
-    setMessages((prev) => [...prev, { text: input, sender: 'user' }]);
-    const key = Object.keys(chatbotResponses).find((k) => input.toLowerCase().includes(k)) || 'default';
-
-    setTimeout(() => {
-      setMessages((prev) => [...prev, { text: chatbotResponses[key], sender: 'bot' }]);
-    }, 500);
-
+    const userMessage = input.trim();
+    setMessages((prev) => [...prev, { text: userMessage, sender: 'user' }]);
     setInput('');
+
+    if (awaitingTicket) {
+      if (userMessage.toLowerCase() === 'yes') {
+        try {
+          const user = JSON.parse(localStorage.getItem('user'));
+          await createTicket({
+            requesterId: user.id,
+            issueType: ticketData.issueType,
+            description: ticketData.description,
+            priority: ticketData.priority
+          });
+          setMessages((prev) => [...prev, { 
+            text: 'Great! Your ticket has been created successfully. You can track it in "My Issues" page.', 
+            sender: 'bot' 
+          }]);
+          if (onTicketCreated) onTicketCreated();
+        } catch (error) {
+          setMessages((prev) => [...prev, { 
+            text: 'Sorry, there was an error creating your ticket. Please try again.', 
+            sender: 'bot' 
+          }]);
+        }
+        setAwaitingTicket(false);
+        setTicketData({});
+      } else {
+        setMessages((prev) => [...prev, { 
+          text: 'No problem! How else can I help you?', 
+          sender: 'bot' 
+        }]);
+        setAwaitingTicket(false);
+        setTicketData({});
+      }
+      return;
+    }
+
+    const lower = userMessage.toLowerCase();
+    
+    if (lower.includes('issue') || lower.includes('problem') || lower.includes('help') || lower.includes('not working') || lower.includes('error')) {
+      const issueType = detectIssueType(userMessage);
+      const priority = detectPriority(userMessage);
+      
+      setTicketData({
+        issueType,
+        description: userMessage,
+        priority
+      });
+      
+      setTimeout(() => {
+        setMessages((prev) => [...prev, { 
+          text: `I understand you're facing a ${issueType.toLowerCase()} issue. I've detected this as ${priority.toLowerCase()} priority. Would you like me to create a ticket for you? (Reply with "yes" or "no")`, 
+          sender: 'bot' 
+        }]);
+        setAwaitingTicket(true);
+      }, 500);
+    } else if (lower.includes('status') || lower.includes('track')) {
+      setTimeout(() => {
+        setMessages((prev) => [...prev, { 
+          text: 'You can check your ticket status in the "My Issues" page from the sidebar.', 
+          sender: 'bot' 
+        }]);
+      }, 500);
+    } else if (lower.includes('hello') || lower.includes('hi')) {
+      setTimeout(() => {
+        setMessages((prev) => [...prev, { 
+          text: 'Hello! How can I assist you today?', 
+          sender: 'bot' 
+        }]);
+      }, 500);
+    } else {
+      setTimeout(() => {
+        setMessages((prev) => [...prev, { 
+          text: 'I can help you with IT issues. Please describe your problem and I\'ll create a ticket for you.', 
+          sender: 'bot' 
+        }]);
+      }, 500);
+    }
   };
 
   return (

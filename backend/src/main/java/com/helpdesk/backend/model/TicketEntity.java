@@ -53,6 +53,12 @@ public class TicketEntity {
     @Column(nullable = false)
     private TicketStatus status;
 
+    private LocalDateTime slaDeadline;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer escalationLevel = 0;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 

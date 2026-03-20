@@ -8,15 +8,18 @@ import com.helpdesk.backend.model.IssueType;
 import com.helpdesk.backend.model.ModuleName;
 import com.helpdesk.backend.model.ModulePermissionEntity;
 import com.helpdesk.backend.model.Role;
+import com.helpdesk.backend.model.Team;
 import com.helpdesk.backend.model.TicketCommentEntity;
 import com.helpdesk.backend.model.TicketEntity;
 import com.helpdesk.backend.model.TicketPriority;
 import com.helpdesk.backend.model.TicketStatus;
 import com.helpdesk.backend.model.UserEntity;
+import com.helpdesk.backend.model.SLAPolicyEntity;
 import com.helpdesk.backend.repository.ModulePermissionRepository;
 import com.helpdesk.backend.repository.TicketCommentRepository;
 import com.helpdesk.backend.repository.TicketRepository;
 import com.helpdesk.backend.repository.UserRepository;
+import com.helpdesk.backend.repository.SLAPolicyRepository;
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -35,6 +38,7 @@ public class DataSeeder implements CommandLineRunner {
     private final TicketRepository ticketRepository;
     private final TicketCommentRepository commentRepository;
     private final ModulePermissionRepository permissionRepository;
+    private final SLAPolicyRepository slaPolicyRepository;
 
     @Override
     public void run(String... args) {
@@ -57,6 +61,7 @@ public class DataSeeder implements CommandLineRunner {
                 .password(SEEDED_CREDENTIALS.get("john@helpdesk.com"))
                 .seeded(true)
                 .role(Role.EMPLOYEE)
+                .team(Team.NETWORK)
                 .build());
 
         UserEntity employeeTwo = userRepository.save(UserEntity.builder()
@@ -65,6 +70,16 @@ public class DataSeeder implements CommandLineRunner {
                 .password(SEEDED_CREDENTIALS.get("jane@helpdesk.com"))
                 .seeded(true)
                 .role(Role.EMPLOYEE)
+                .team(Team.SOFTWARE)
+                .build());
+
+        UserEntity employeeThree = userRepository.save(UserEntity.builder()
+                .name("Mike Employee")
+                .email("mike@helpdesk.com")
+                .password("employee123")
+                .seeded(true)
+                .role(Role.EMPLOYEE)
+                .team(Team.HARDWARE)
                 .build());
 
         UserEntity userOne = userRepository.save(UserEntity.builder()
@@ -156,6 +171,33 @@ public class DataSeeder implements CommandLineRunner {
         seedPermissions(Role.USER, true, true, false, false, false);
         seedPermissions(Role.EMPLOYEE, true, false, true, false, true);
         seedPermissions(Role.ADMIN, true, false, false, true, true);
+
+        seedSLAPolicies();
+    }
+
+    private void seedSLAPolicies() {
+        if (slaPolicyRepository.count() == 0) {
+            slaPolicyRepository.saveAll(List.of(
+                SLAPolicyEntity.builder()
+                    .priority(TicketPriority.HIGH)
+                    .responseTimeHours(1)
+                    .resolutionTimeHours(4)
+                    .active(true)
+                    .build(),
+                SLAPolicyEntity.builder()
+                    .priority(TicketPriority.MEDIUM)
+                    .responseTimeHours(4)
+                    .resolutionTimeHours(24)
+                    .active(true)
+                    .build(),
+                SLAPolicyEntity.builder()
+                    .priority(TicketPriority.LOW)
+                    .responseTimeHours(24)
+                    .resolutionTimeHours(72)
+                    .active(true)
+                    .build()
+            ));
+        }
     }
 
     private void restoreSeededCredentials() {

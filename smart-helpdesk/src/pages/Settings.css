@@ -1,0 +1,73 @@
+.settings-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.settings-card {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.settings-card h3 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.settings-card .form-group {
+  margin-bottom: 16px;
+}
+
+.settings-card label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.settings-card input[type="text"],
+.settings-card input[type="email"],
+.settings-card input[type="password"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.settings-card input[type="text"]:disabled,
+.settings-card input[type="email"]:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.settings-card input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.settings-card label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.settings-card .btn-primary {
+  background: #0d6efd;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.settings-card .btn-primary:hover {
+  background: #0b5ed7;
+}
