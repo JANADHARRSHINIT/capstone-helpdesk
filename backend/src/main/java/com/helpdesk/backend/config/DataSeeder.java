@@ -20,6 +20,7 @@ import com.helpdesk.backend.repository.TicketCommentRepository;
 import com.helpdesk.backend.repository.TicketRepository;
 import com.helpdesk.backend.repository.UserRepository;
 import com.helpdesk.backend.repository.SLAPolicyRepository;
+import com.helpdesk.backend.service.TicketIntelligenceService;
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -40,12 +41,14 @@ public class DataSeeder implements CommandLineRunner {
     private final TicketCommentRepository commentRepository;
     private final ModulePermissionRepository permissionRepository;
     private final SLAPolicyRepository slaPolicyRepository;
+    private final TicketIntelligenceService ticketIntelligenceService;
 
     @Override
     public void run(String... args) {
         if (userRepository.count() > 0) {
             restoreSeededCredentials();
             restoreSeededAssignments();
+            reclassifyExistingTickets();
             return;
         }
 
@@ -175,6 +178,7 @@ public class DataSeeder implements CommandLineRunner {
         seedPermissions(Role.ADMIN, true, false, false, true, true);
 
         seedSLAPolicies();
+        reclassifyExistingTickets();
     }
 
     private void seedSLAPolicies() {
@@ -274,6 +278,46 @@ public class DataSeeder implements CommandLineRunner {
             case SOFTWARE -> jane;
             case NETWORK -> mike;
         };
+    }
+
+    private void reclassifyExistingTickets() {
+        ticketRepository.findAll().stream()
+                .filter(ticket -> ticket.getDescription() != null && !ticket.getDescription().isBlank())
+                .forEach(ticket -> {
+                    TicketIntelligenceService.TicketDecision decision =
+                            ticketIntelligenceService.analyze(ticket.getDescription());
+                    boolean changed = false;
+
+                    if (ticket.getIssueType() != decision.issueType()) {
+                        ticket.setIssueType(decision.issueType());
+                        changed = true;
+                    }
+                    if (ticket.getPriority() != decision.priority()) {
+                        ticket.setPriority(decision.priority());
+                        changed = true;
+                    }
+                    if (ticket.getRoutingTeam() != decision.routingTeam()) {
+                        ticket.setRoutingTeam(decision.routingTeam());
+                        changed = true;
+                    }
+                    if (ticket.getClassificationConfidence() == null
+                            || !ticket.getClassificationConfidence().equals(decision.classificationConfidence())) {
+                        ticket.setClassificationConfidence(decision.classificationConfidence());
+                        changed = true;
+                    }
+
+                    Long currentAssigneeId = ticket.getAssignedEmployee() != null ? ticket.getAssignedEmployee().getId() : null;
+                    Long predictedAssigneeId = decision.assignedEmployee() != null ? decision.assignedEmployee().getId() : null;
+                    if ((currentAssigneeId == null && predictedAssigneeId != null)
+                            || (currentAssigneeId != null && !currentAssigneeId.equals(predictedAssigneeId))) {
+                        ticket.setAssignedEmployee(decision.assignedEmployee());
+                        changed = true;
+                    }
+
+                    if (changed) {
+                        ticketRepository.save(ticket);
+                    }
+                });
     }
 
     private void seedPermissions(Role role, boolean raiseTicket, boolean selfServiceTools,

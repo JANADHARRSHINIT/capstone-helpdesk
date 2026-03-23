@@ -98,6 +98,10 @@ public class TicketIntelligenceService {
         if (containsAll(tokens, "cursor", "move")) {
             return buildForcedDecision(IssueType.HARDWARE, TicketPriority.MEDIUM);
         }
+        if (containsAny(tokens, "slow", "hang", "lag", "freeze", "startup", "performance")
+                && !containsAny(tokens, "touchpad", "keyboard", "screen", "battery", "charger", "printer", "mouse")) {
+            return buildForcedDecision(IssueType.SOFTWARE, TicketPriority.MEDIUM);
+        }
         if (containsAny(tokens, "update")) {
             return buildForcedDecision(IssueType.SOFTWARE, TicketPriority.MEDIUM);
         }
@@ -180,7 +184,7 @@ public class TicketIntelligenceService {
         if (containsAny(tokens, "network", "vpn", "router", "lan")) {
             return IssueType.NETWORK;
         }
-        if (containsAny(tokens, "printer", "laptop", "screen", "keyboard", "mouse", "charger", "hardware", "touchpad")) {
+        if (containsAny(tokens, "printer", "screen", "keyboard", "mouse", "charger", "hardware", "touchpad", "battery")) {
             return IssueType.HARDWARE;
         }
         if (containsAny(tokens, "software", "application", "update", "install", "installation", "crash")) {
