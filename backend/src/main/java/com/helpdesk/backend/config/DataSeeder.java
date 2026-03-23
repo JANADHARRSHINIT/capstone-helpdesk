@@ -30,6 +30,7 @@ public class DataSeeder implements CommandLineRunner {
             "admin@helpdesk.com", "admin123",
             "john@helpdesk.com", "employee123",
             "jane@helpdesk.com", "employee123",
+            "mike@helpdesk.com", "employee123",
             "alice@company.com", "user123",
             "bob@company.com", "user123"
     );
@@ -44,6 +45,7 @@ public class DataSeeder implements CommandLineRunner {
     public void run(String... args) {
         if (userRepository.count() > 0) {
             restoreSeededCredentials();
+            restoreSeededAssignments();
             return;
         }
 
@@ -61,7 +63,7 @@ public class DataSeeder implements CommandLineRunner {
                 .password(SEEDED_CREDENTIALS.get("john@helpdesk.com"))
                 .seeded(true)
                 .role(Role.EMPLOYEE)
-                .team(Team.NETWORK)
+                .team(Team.HARDWARE)
                 .build());
 
         UserEntity employeeTwo = userRepository.save(UserEntity.builder()
@@ -76,10 +78,10 @@ public class DataSeeder implements CommandLineRunner {
         UserEntity employeeThree = userRepository.save(UserEntity.builder()
                 .name("Mike Employee")
                 .email("mike@helpdesk.com")
-                .password("employee123")
+                .password(SEEDED_CREDENTIALS.get("mike@helpdesk.com"))
                 .seeded(true)
                 .role(Role.EMPLOYEE)
-                .team(Team.HARDWARE)
+                .team(Team.NETWORK)
                 .build());
 
         UserEntity userOne = userRepository.save(UserEntity.builder()
@@ -100,7 +102,7 @@ public class DataSeeder implements CommandLineRunner {
 
         TicketEntity ticketOne = ticketRepository.save(TicketEntity.builder()
                 .requester(userOne)
-                .assignedEmployee(employeeOne)
+                .assignedEmployee(employeeTwo)
                 .issueType(IssueType.SOFTWARE)
                 .description("Unable to access email client. Getting authentication error.")
                 .priority(TicketPriority.HIGH)
@@ -109,7 +111,7 @@ public class DataSeeder implements CommandLineRunner {
 
         TicketEntity ticketTwo = ticketRepository.save(TicketEntity.builder()
                 .requester(userTwo)
-                .assignedEmployee(employeeTwo)
+                .assignedEmployee(employeeOne)
                 .issueType(IssueType.HARDWARE)
                 .description("Printer not working in office")
                 .priority(TicketPriority.MEDIUM)
@@ -119,7 +121,7 @@ public class DataSeeder implements CommandLineRunner {
         ticketRepository.saveAll(List.of(
                 TicketEntity.builder()
                         .requester(userOne)
-                        .assignedEmployee(employeeOne)
+                        .assignedEmployee(employeeThree)
                         .issueType(IssueType.NETWORK)
                         .description("Slow internet connection")
                         .priority(TicketPriority.LOW)
@@ -134,7 +136,7 @@ public class DataSeeder implements CommandLineRunner {
                         .build(),
                 TicketEntity.builder()
                         .requester(userOne)
-                        .assignedEmployee(employeeTwo)
+                        .assignedEmployee(employeeOne)
                         .issueType(IssueType.HARDWARE)
                         .description("Laptop screen flickering")
                         .priority(TicketPriority.HIGH)
@@ -142,7 +144,7 @@ public class DataSeeder implements CommandLineRunner {
                         .build(),
                 TicketEntity.builder()
                         .requester(userTwo)
-                        .assignedEmployee(employeeOne)
+                        .assignedEmployee(employeeThree)
                         .issueType(IssueType.NETWORK)
                         .description("Cannot connect to VPN")
                         .priority(TicketPriority.HIGH)
@@ -206,9 +208,72 @@ public class DataSeeder implements CommandLineRunner {
             if (expectedPassword != null) {
                 user.setSeeded(true);
                 user.setPassword(expectedPassword);
+                if ("john@helpdesk.com".equals(user.getEmail())) {
+                    user.setName("John Employee");
+                    user.setRole(Role.EMPLOYEE);
+                    user.setTeam(Team.HARDWARE);
+                } else if ("jane@helpdesk.com".equals(user.getEmail())) {
+                    user.setName("Jane Employee");
+                    user.setRole(Role.EMPLOYEE);
+                    user.setTeam(Team.SOFTWARE);
+                } else if ("mike@helpdesk.com".equals(user.getEmail())) {
+                    user.setName("Mike Employee");
+                    user.setRole(Role.EMPLOYEE);
+                    user.setTeam(Team.NETWORK);
+                }
                 userRepository.save(user);
             }
         });
+    }
+
+    private void restoreSeededAssignments() {
+        UserEntity john = userRepository.findByEmail("john@helpdesk.com").orElse(null);
+        UserEntity jane = userRepository.findByEmail("jane@helpdesk.com").orElse(null);
+        UserEntity mike = userRepository.findByEmail("mike@helpdesk.com").orElse(null);
+        if (john == null || jane == null || mike == null) {
+            return;
+        }
+
+        ticketRepository.findAll().forEach(ticket -> {
+            if ("Unable to access email client. Getting authentication error.".equals(ticket.getDescription())) {
+                ticket.setAssignedEmployee(jane);
+            } else if ("Printer not working in office".equals(ticket.getDescription())) {
+                ticket.setAssignedEmployee(john);
+            } else if ("Slow internet connection".equals(ticket.getDescription())
+                    || "Cannot connect to VPN".equals(ticket.getDescription())) {
+                ticket.setAssignedEmployee(mike);
+            } else if ("Laptop screen flickering".equals(ticket.getDescription())) {
+                ticket.setAssignedEmployee(john);
+            } else if (ticket.getRequester() != null
+                    && ticket.getRequester().isSeeded()
+                    && ticket.getIssueType() != null
+                    && ticket.getAssignedEmployee() != null
+                    && ticket.getAssignedEmployee().isSeeded()
+                    && ticket.getAssignedEmployee().getRole() == Role.EMPLOYEE
+                    && !isSpecialistFor(ticket.getAssignedEmployee(), ticket.getIssueType())) {
+                ticket.setAssignedEmployee(defaultAssigneeFor(ticket.getIssueType(), john, jane, mike));
+            }
+            ticketRepository.save(ticket);
+        });
+    }
+
+    private boolean isSpecialistFor(UserEntity employee, IssueType issueType) {
+        if (employee.getTeam() == null || issueType == null) {
+            return false;
+        }
+        return switch (issueType) {
+            case HARDWARE -> employee.getTeam() == Team.HARDWARE;
+            case SOFTWARE -> employee.getTeam() == Team.SOFTWARE;
+            case NETWORK -> employee.getTeam() == Team.NETWORK;
+        };
+    }
+
+    private UserEntity defaultAssigneeFor(IssueType issueType, UserEntity john, UserEntity jane, UserEntity mike) {
+        return switch (issueType) {
+            case HARDWARE -> john;
+            case SOFTWARE -> jane;
+            case NETWORK -> mike;
+        };
     }
 
     private void seedPermissions(Role role, boolean raiseTicket, boolean selfServiceTools,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import Chatbot from '../components/Chatbot';
@@ -10,18 +10,18 @@ function Users() {
   const [users, setUsers] = useState([]);
   const [filter, setFilter] = useState('ALL');
 
-  useEffect(() => {
-    loadUsers();
-  }, [filter]);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       const data = await fetchUsers(filter === 'ALL' ? null : filter);
       setUsers(data);
     } catch (error) {
       alert(error.message || 'Failed to load users');
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const getRoleBadge = (role) => {
     if (role === 'ADMIN') return 'badge-high';

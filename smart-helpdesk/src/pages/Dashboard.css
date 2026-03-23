@@ -85,6 +85,88 @@
   gap: 18px;
 }
 
+.dashboard-assigned-card {
+  margin-top: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--line-soft);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow-soft);
+}
+
+.dashboard-assigned-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.dashboard-assigned-header p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.dashboard-ticket-list {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dashboard-ticket-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #e3edf8;
+  border-radius: 14px;
+  padding: 18px;
+  background: #f9fbff;
+}
+
+.dashboard-ticket-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-ticket-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dashboard-ticket-team {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e0ecff;
+  color: var(--brand-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dashboard-ticket-meta {
+  margin: 8px 0 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.dashboard-ticket-description {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.dashboard-ticket-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.dashboard-empty {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
 .chart-card {
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid var(--line-soft);
@@ -118,6 +200,14 @@
 
   .charts-grid {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-ticket-item {
+    flex-direction: column;
+  }
+
+  .dashboard-ticket-side {
+    align-items: flex-start;
   }
 
   .stat-card {

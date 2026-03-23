@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
@@ -12,9 +12,10 @@ function MyIssues() {
   const [priorityFilter, setPriorityFilter] = useState('ALL');
   const [tickets, setTickets] = useState([]);
   const user = JSON.parse(localStorage.getItem('user'));
+  const permissions = JSON.parse(localStorage.getItem('permissions') || '{}');
   const navigate = useNavigate();
 
-  const loadTickets = async () => {
+  const loadTickets = useCallback(async () => {
     try {
       const data = await fetchTickets({
         status: statusFilter,
@@ -25,11 +26,11 @@ function MyIssues() {
     } catch (error) {
       alert(error.message || 'Failed to load tickets');
     }
-  };
+  }, [priorityFilter, search, statusFilter]);
 
   useEffect(() => {
     loadTickets();
-  }, [statusFilter, priorityFilter, search]);
+  }, [loadTickets]);
 
   const getPriorityClass = (priority) => {
     if (priority === 'HIGH') return 'badge-high';
@@ -73,6 +74,11 @@ function MyIssues() {
               <option value="MEDIUM">Medium</option>
               <option value="LOW">Low</option>
             </select>
+            {permissions.RAISE_TICKET !== false && (
+              <button onClick={() => navigate('/raise-ticket')} className="view-btn">
+                Raise Ticket
+              </button>
+            )}
           </div>
 
           <div className="issues-table-container">
@@ -80,7 +86,9 @@ function MyIssues() {
               <thead>
                 <tr>
                   <th>Ticket ID</th>
-                  <th>Issue Type</th>
+                  <th>Category</th>
+                  <th>Team</th>
+                  <th>Assigned To</th>
                   <th>Description</th>
                   <th>Priority</th>
                   <th>Status</th>
@@ -91,8 +99,8 @@ function MyIssues() {
               <tbody>
                 {tickets.length === 0 ? (
                   <tr>
-                    <td colSpan="7" style={{ textAlign: 'center', padding: '20px' }}>
-                      No tickets found. Use the chatbot to raise an issue.
+                    <td colSpan="9" style={{ textAlign: 'center', padding: '20px' }}>
+                      No tickets found. Use the Raise Ticket module or chatbot to create one.
                     </td>
                   </tr>
                 ) : (
@@ -100,6 +108,8 @@ function MyIssues() {
                     <tr key={ticket.id}>
                       <td>#{ticket.id}</td>
                       <td>{ticket.issueType}</td>
+                      <td>{ticket.routingTeam || ticket.issueType}</td>
+                      <td>{ticket.assignedEmployeeName || 'Pending assignment'}</td>
                       <td>{ticket.description.substring(0, 50)}...</td>
                       <td><span className={`badge ${getPriorityClass(ticket.priority)}`}>{ticket.priority}</span></td>
                       <td><span className={`badge ${getStatusClass(ticket.status)}`}>{ticket.status.replace('_', ' ')}</span></td>

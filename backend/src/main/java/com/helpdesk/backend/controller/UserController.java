@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.helpdesk.backend.dto.UserResponse;
 import com.helpdesk.backend.model.Role;
 import com.helpdesk.backend.repository.UserRepository;
+import com.helpdesk.backend.security.RequestAuthorizer;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -16,9 +18,11 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final RequestAuthorizer authorizer;
 
     @GetMapping
-    public List<UserResponse> listUsers(@RequestParam(required = false) Role role) {
+    public List<UserResponse> listUsers(@RequestParam(required = false) Role role, HttpServletRequest request) {
+        authorizer.requireAnyRole(request, Role.ADMIN);
         if (role == null) {
             return userRepository.findAll().stream().map(this::toResponse).toList();
         }

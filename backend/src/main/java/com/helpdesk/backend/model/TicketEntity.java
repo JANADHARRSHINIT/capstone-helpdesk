@@ -53,6 +53,11 @@ public class TicketEntity {
     @Column(nullable = false)
     private TicketStatus status;
 
+    @Enumerated(EnumType.STRING)
+    private Team routingTeam;
+
+    private Double classificationConfidence;
+
     private LocalDateTime slaDeadline;
 
     @Column(nullable = false)

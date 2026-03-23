@@ -16,21 +16,6 @@ function Chatbot({ onTicketCreated }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const detectIssueType = (text) => {
-    const lower = text.toLowerCase();
-    if (lower.includes('network') || lower.includes('internet') || lower.includes('wifi') || lower.includes('vpn')) return 'NETWORK';
-    if (lower.includes('software') || lower.includes('application') || lower.includes('app') || lower.includes('email')) return 'SOFTWARE';
-    if (lower.includes('hardware') || lower.includes('laptop') || lower.includes('printer') || lower.includes('mouse') || lower.includes('keyboard')) return 'HARDWARE';
-    return 'SOFTWARE';
-  };
-
-  const detectPriority = (text) => {
-    const lower = text.toLowerCase();
-    if (lower.includes('urgent') || lower.includes('critical') || lower.includes('asap') || lower.includes('immediately')) return 'HIGH';
-    if (lower.includes('soon') || lower.includes('important')) return 'MEDIUM';
-    return 'LOW';
-  };
-
   const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -43,14 +28,12 @@ function Chatbot({ onTicketCreated }) {
       if (userMessage.toLowerCase() === 'yes') {
         try {
           const user = JSON.parse(localStorage.getItem('user'));
-          await createTicket({
+          const createdTicket = await createTicket({
             requesterId: user.id,
-            issueType: ticketData.issueType,
-            description: ticketData.description,
-            priority: ticketData.priority
+            description: ticketData.description
           });
           setMessages((prev) => [...prev, { 
-            text: 'Great! Your ticket has been created successfully. You can track it in "My Issues" page.', 
+            text: `Ticket #${createdTicket.id} has been created successfully. You can view its status from the My Issues page.`, 
             sender: 'bot' 
           }]);
           if (onTicketCreated) onTicketCreated();
@@ -76,18 +59,13 @@ function Chatbot({ onTicketCreated }) {
     const lower = userMessage.toLowerCase();
     
     if (lower.includes('issue') || lower.includes('problem') || lower.includes('help') || lower.includes('not working') || lower.includes('error')) {
-      const issueType = detectIssueType(userMessage);
-      const priority = detectPriority(userMessage);
-      
       setTicketData({
-        issueType,
-        description: userMessage,
-        priority
+        description: userMessage
       });
       
       setTimeout(() => {
         setMessages((prev) => [...prev, { 
-          text: `I understand you're facing a ${issueType.toLowerCase()} issue. I've detected this as ${priority.toLowerCase()} priority. Would you like me to create a ticket for you? (Reply with "yes" or "no")`, 
+          text: 'I can create a ticket from that description. Reply with "yes" to continue.', 
           sender: 'bot' 
         }]);
         setAwaitingTicket(true);

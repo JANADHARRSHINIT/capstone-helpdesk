@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
@@ -13,22 +13,29 @@ function Issues() {
   const [tickets, setTickets] = useState([]);
   const user = JSON.parse(localStorage.getItem('user'));
   const navigate = useNavigate();
+  const isEmployee = user.role === 'EMPLOYEE';
+
+  const loadTickets = useCallback(async () => {
+    try {
+      const data = await fetchTickets({
+        status: statusFilter,
+        priority: priorityFilter,
+        search,
+        assignedToMe: isEmployee
+      });
+      setTickets(
+        isEmployee
+          ? data.filter((ticket) => ticket.assignedEmployeeId === user.id)
+          : data
+      );
+    } catch (error) {
+      alert(error.message || 'Failed to load tickets');
+    }
+  }, [isEmployee, priorityFilter, search, statusFilter, user.id]);
 
   useEffect(() => {
-    const loadTickets = async () => {
-      try {
-        const data = await fetchTickets({
-          status: statusFilter,
-          priority: priorityFilter,
-          search
-        });
-        setTickets(data);
-      } catch (error) {
-        alert(error.message || 'Failed to load tickets');
-      }
-    };
     loadTickets();
-  }, [statusFilter, priorityFilter, search]);
+  }, [loadTickets]);
 
   const getPriorityClass = (priority) => {
     if (priority === 'HIGH') return 'badge-high';
@@ -48,13 +55,13 @@ function Issues() {
       <Sidebar role={user.role} />
       
       <div className="dashboard-main">
-        <Navbar title="All Issues" userName={user.name} />
+        <Navbar title={isEmployee ? 'My Assigned Issues' : 'All Issues'} userName={user.name} />
         
         <div className="dashboard-content">
           <div className="issues-header">
             <input
               type="text"
-              placeholder="Search by ID or customer..."
+              placeholder={isEmployee ? 'Search by ID or customer...' : 'Search by ID or customer...'}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="search-input"
@@ -80,7 +87,9 @@ function Issues() {
                 <tr>
                   <th>Ticket ID</th>
                   <th>User</th>
-                  <th>Issue Type</th>
+                  <th>Category</th>
+                  <th>Team</th>
+                  <th>Assigned To</th>
                   <th>Priority</th>
                   <th>Status</th>
                   <th>Date</th>
@@ -88,19 +97,29 @@ function Issues() {
                 </tr>
               </thead>
               <tbody>
-                {tickets.map(ticket => (
-                  <tr key={ticket.id}>
-                    <td>#{ticket.id}</td>
-                    <td>{ticket.customerName}</td>
-                    <td>{ticket.issueType}</td>
-                    <td><span className={`badge ${getPriorityClass(ticket.priority)}`}>{ticket.priority}</span></td>
-                    <td><span className={`badge ${getStatusClass(ticket.status)}`}>{ticket.status.replace('_', ' ')}</span></td>
-                    <td>{new Date(ticket.createdAt).toLocaleDateString()}</td>
-                    <td>
-                      <button onClick={() => navigate(`/ticket/${ticket.id}`)} className="view-btn">View</button>
+                {tickets.length === 0 ? (
+                  <tr>
+                    <td colSpan="9" style={{ textAlign: 'center', padding: '20px' }}>
+                      {isEmployee ? 'No tickets are currently assigned to you.' : 'No tickets found.'}
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  tickets.map(ticket => (
+                    <tr key={ticket.id}>
+                      <td>#{ticket.id}</td>
+                      <td>{ticket.customerName}</td>
+                      <td>{ticket.issueType}</td>
+                      <td>{ticket.routingTeam || ticket.issueType}</td>
+                      <td>{ticket.assignedEmployeeName || 'Unassigned'}</td>
+                      <td><span className={`badge ${getPriorityClass(ticket.priority)}`}>{ticket.priority}</span></td>
+                      <td><span className={`badge ${getStatusClass(ticket.status)}`}>{ticket.status.replace('_', ' ')}</span></td>
+                      <td>{new Date(ticket.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        <button onClick={() => navigate(`/ticket/${ticket.id}`)} className="view-btn">View</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

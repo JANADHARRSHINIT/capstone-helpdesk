@@ -7,14 +7,17 @@ function Sidebar({ role }) {
 
   const menuItems = [
     { path: '/dashboard', label: 'Dashboard', icon: '\u{1F4CA}', roles: ['ADMIN', 'EMPLOYEE', 'USER'] },
-    { path: '/issues', label: 'All Issues', icon: '\u{1F3AB}', roles: ['ADMIN', 'EMPLOYEE'] },
+    { path: '/issues', label: role === 'EMPLOYEE' ? 'My Queue' : 'All Issues', icon: '\u{1F3AB}', roles: ['ADMIN', 'EMPLOYEE'] },
+    { path: '/raise-ticket', label: 'Raise Ticket', icon: '\u2795', roles: ['USER'], permission: 'RAISE_TICKET' },
     { path: '/my-issues', label: 'My Issues', icon: '\u{1F4DD}', roles: ['USER'] },
     { path: '/users', label: 'Users', icon: '\u{1F465}', roles: ['ADMIN'] },
     { path: '/reports', label: 'Reports', icon: '\u{1F4C8}', roles: ['ADMIN'] },
     { path: '/settings', label: 'Settings', icon: '\u2699\uFE0F', roles: ['ADMIN', 'EMPLOYEE', 'USER'] }
   ];
 
-  const filteredMenu = menuItems.filter(item => item.roles.includes(role));
+  const filteredMenu = menuItems.filter(
+    (item) => item.roles.includes(role) && (!item.permission || permissions[item.permission] !== false)
+  );
   const modules = [
     { key: 'RAISE_TICKET', label: 'Raise Ticket' },
     { key: 'SELF_SERVICE_TOOLS', label: 'Self-Service Tools' },

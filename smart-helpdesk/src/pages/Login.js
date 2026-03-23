@@ -1,9 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { demoLogin, fetchPermissions, login } from '../services/api';
+import { fetchPermissions, login } from '../services/api';
 import './Login.css';
 
 const AUTH_DISABLED = process.env.REACT_APP_DISABLE_AUTH === 'true';
+const QUICK_ACCOUNTS = [
+  { label: 'Admin', email: 'admin@helpdesk.com', password: 'admin123', className: 'admin', fallbackRole: 'ADMIN' },
+  { label: 'John', email: 'john@helpdesk.com', password: 'employee123', className: 'employee', fallbackRole: 'EMPLOYEE' },
+  { label: 'Jane', email: 'jane@helpdesk.com', password: 'employee123', className: 'employee', fallbackRole: 'EMPLOYEE' },
+  { label: 'Mike', email: 'mike@helpdesk.com', password: 'employee123', className: 'employee', fallbackRole: 'EMPLOYEE' },
+  { label: 'User', email: 'alice@company.com', password: 'user123', className: 'customer', fallbackRole: 'USER' }
+];
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -45,15 +52,15 @@ function Login() {
     }
   };
 
-  const quickLogin = async (role) => {
+  const quickLogin = async (account) => {
     try {
       setLoading(true);
       if (AUTH_DISABLED) {
         const fallbackUser = {
           id: Date.now(),
-          name: `${role} Local`,
-          email: `${role.toLowerCase()}@helpdesk.dev`,
-          role
+          name: `${account.label} Local`,
+          email: account.email,
+          role: account.fallbackRole
         };
         localStorage.setItem('user', JSON.stringify(fallbackUser));
         localStorage.setItem('permissions', JSON.stringify({}));
@@ -61,7 +68,7 @@ function Login() {
         return;
       }
 
-      const user = await demoLogin(role);
+      const user = await login(account.email, account.password);
       localStorage.setItem('user', JSON.stringify(user));
       try {
         const permissions = await fetchPermissions(user.role);
@@ -147,9 +154,16 @@ function Login() {
           </div>
 
           <div className="quick-login-btns">
-            <button onClick={() => quickLogin('ADMIN')} className="quick-btn admin" disabled={loading}>Admin</button>
-            <button onClick={() => quickLogin('EMPLOYEE')} className="quick-btn employee" disabled={loading}>Employee</button>
-            <button onClick={() => quickLogin('USER')} className="quick-btn customer" disabled={loading}>User</button>
+            {QUICK_ACCOUNTS.map((account) => (
+              <button
+                key={account.email}
+                onClick={() => quickLogin(account)}
+                className={`quick-btn ${account.className}`}
+                disabled={loading}
+              >
+                {account.label}
+              </button>
+            ))}
           </div>
 
           <p className="signup-link">

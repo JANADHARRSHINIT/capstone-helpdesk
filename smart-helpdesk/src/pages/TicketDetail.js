@@ -11,6 +11,7 @@ function TicketDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
+  const userRole = user.role;
 
   const [ticket, setTicket] = useState(null);
   const [employees, setEmployees] = useState([]);
@@ -23,27 +24,28 @@ function TicketDetail() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [ticketData, employeeData] = await Promise.all([
-          fetchTicketById(id),
-          fetchUsers('EMPLOYEE')
-        ]);
+        const ticketData = await fetchTicketById(id);
         setTicket(ticketData);
         setStatus(ticketData.status);
         setPriority(ticketData.priority);
         setAssignedEmployee(ticketData.assignedEmployeeId || '');
-        setEmployees(employeeData);
-        
-        // Filter employees by team matching issue type
-        const teamMatch = employeeData.filter(emp => 
-          emp.team && emp.team === ticketData.issueType
-        );
-        setFilteredEmployees(teamMatch.length > 0 ? teamMatch : employeeData);
+
+        if (userRole === 'ADMIN') {
+          const employeeData = await fetchUsers('EMPLOYEE');
+          setEmployees(employeeData);
+
+          const recommendedTeam = ticketData.routingTeam || ticketData.issueType;
+          const teamMatch = employeeData.filter((emp) =>
+            emp.team && emp.team === recommendedTeam
+          );
+          setFilteredEmployees(teamMatch.length > 0 ? teamMatch : employeeData);
+        }
       } catch (error) {
         alert(error.message || 'Failed to load ticket');
       }
     };
     loadData();
-  }, [id]);
+  }, [id, userRole]);
 
   if (!ticket) {
     return <div>Loading ticket...</div>;
@@ -144,6 +146,14 @@ function TicketDetail() {
                     <span>{ticket.issueType}</span>
                   </div>
                   <div className="info-row">
+                    <label>Support Team</label>
+                    <span>{ticket.routingTeam || ticket.issueType}</span>
+                  </div>
+                  <div className="info-row">
+                    <label>Assigned Employee</label>
+                    <span>{ticket.assignedEmployeeName || 'Unassigned'}</span>
+                  </div>
+                  <div className="info-row">
                     <label>Description</label>
                     <p className="description-text">{ticket.description}</p>
                   </div>
@@ -210,7 +220,7 @@ function TicketDetail() {
                   <>
                     <div className="action-group">
                       <label>Recommended Team</label>
-                      <p className="info-text team-badge">{ticket.issueType} Team</p>
+                      <p className="info-text team-badge">{ticket.routingTeam || ticket.issueType} Team</p>
                     </div>
                     
                     <div className="action-group">
