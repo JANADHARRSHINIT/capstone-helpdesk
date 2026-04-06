@@ -289,6 +289,60 @@
   display: inline-block;
 }
 
+.sla-indicator {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sla-ok { background: #d1fae5; color: #065f46; }
+.sla-breached { background: #fee2e2; color: #991b1b; }
+
+.sla-indicator small {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.audit-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.audit-log-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border-left: 3px solid #0d6efd;
+}
+
+.audit-action {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0d6efd;
+  text-transform: uppercase;
+}
+
+.audit-detail {
+  font-size: 12px;
+  color: #374151;
+}
+
+.audit-time {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
 @media (max-width: 1024px) {
   .ticket-detail-grid {
     grid-template-columns: 1fr;

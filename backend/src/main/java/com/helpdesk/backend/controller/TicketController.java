@@ -6,8 +6,9 @@ import static com.helpdesk.backend.dto.TicketDtos.CreateTicketRequest;
 import static com.helpdesk.backend.dto.TicketDtos.TicketCommentResponse;
 import static com.helpdesk.backend.dto.TicketDtos.TicketDetailResponse;
 import static com.helpdesk.backend.dto.TicketDtos.TicketSummaryResponse;
-import static com.helpdesk.backend.dto.TicketDtos.UpdateStatusRequest;
 import static com.helpdesk.backend.dto.TicketDtos.UpdatePriorityRequest;
+import static com.helpdesk.backend.dto.TicketDtos.UpdateStatusRequest;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -20,24 +21,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import com.helpdesk.backend.model.AuditLogEntity;
+import com.helpdesk.backend.model.IssueType;
+import com.helpdesk.backend.model.TicketAssignmentStatus;
 import com.helpdesk.backend.model.TicketCommentEntity;
 import com.helpdesk.backend.model.TicketEntity;
 import com.helpdesk.backend.model.TicketPriority;
-import com.helpdesk.backend.model.Role;
 import com.helpdesk.backend.model.TicketStatus;
 import com.helpdesk.backend.model.UserEntity;
-import com.helpdesk.backend.model.AuditLogEntity;
-import com.helpdesk.backend.model.SLAPolicyEntity;
+import com.helpdesk.backend.repository.AuditLogRepository;
+import com.helpdesk.backend.repository.SLAPolicyRepository;
 import com.helpdesk.backend.repository.TicketCommentRepository;
 import com.helpdesk.backend.repository.TicketRepository;
 import com.helpdesk.backend.repository.UserRepository;
-import com.helpdesk.backend.repository.AuditLogRepository;
-import com.helpdesk.backend.repository.SLAPolicyRepository;
-import com.helpdesk.backend.security.RequestAuthorizer;
-import com.helpdesk.backend.service.TicketAccessService;
+import com.helpdesk.backend.service.AIService;
 import com.helpdesk.backend.service.NotificationService;
-import com.helpdesk.backend.service.TicketIntelligenceService;
-import jakarta.servlet.http.HttpServletRequest;
+import com.helpdesk.backend.service.TicketRoutingService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -50,64 +49,46 @@ public class TicketController {
     private final UserRepository userRepository;
     private final AuditLogRepository auditLogRepository;
     private final SLAPolicyRepository slaPolicyRepository;
+    private final AIService aiService;
     private final NotificationService notificationService;
-    private final RequestAuthorizer authorizer;
-    private final TicketIntelligenceService ticketIntelligenceService;
-    private final TicketAccessService ticketAccessService;
+    private final TicketRoutingService ticketRoutingService;
 
     @PostMapping
-    public TicketSummaryResponse createTicket(@RequestBody CreateTicketRequest request, HttpServletRequest httpRequest) {
-        RequestAuthorizer.RequestUser actor = authorizer.requireUser(httpRequest);
-        if (request.requesterId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Requester is required");
-        }
-        if (request.description() == null || request.description().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Description is required");
-        }
-        if (actor.role() == Role.USER && !actor.id().equals(request.requesterId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Users can only create tickets for themselves");
-        }
+    public TicketSummaryResponse createTicket(@RequestBody CreateTicketRequest request) {
         UserEntity requester = userRepository.findById(request.requesterId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        TicketIntelligenceService.TicketDecision decision =
-                ticketIntelligenceService.analyze(request.description().trim());
 
-        LocalDateTime slaDeadline = calculateSLADeadline(decision.priority());
+        AIService.TicketAnalysis analysis = aiService.analyze(request.description());
+        IssueType issueType = request.issueType() != null ? request.issueType() : analysis.issueType();
+        TicketPriority priority = request.priority() != null ? request.priority() : analysis.priority();
+        LocalDateTime estimatedResolutionAt = calculateSLADeadline(priority);
 
         TicketEntity ticket = TicketEntity.builder()
                 .requester(requester)
-                .assignedEmployee(decision.assignedEmployee())
-                .issueType(decision.issueType())
-                .description(request.description().trim())
-                .priority(decision.priority())
+                .issueType(issueType)
+                .description(request.description())
+                .priority(priority)
                 .status(TicketStatus.OPEN)
-                .routingTeam(decision.routingTeam())
-                .classificationConfidence(decision.classificationConfidence())
-                .slaDeadline(slaDeadline)
+                .slaDeadline(estimatedResolutionAt)
+                .estimatedResolutionAt(estimatedResolutionAt)
                 .escalationLevel(0)
+                .assignmentStatus(TicketAssignmentStatus.PENDING_ASSIGNMENT)
                 .build();
-        TicketEntity savedTicket = ticketRepository.save(ticket);
 
-        if (decision.assignedEmployee() != null) {
-            notificationService.createNotification(
-                    decision.assignedEmployee(),
-                    "New Ticket Auto-Routed",
-                    "Ticket #" + savedTicket.getId() + " was classified as " + decision.issueType()
-                            + " with " + decision.priority() + " priority and assigned to you",
-                    savedTicket.getId()
-            );
-        }
+        TicketEntity savedTicket = ticketRepository.save(ticket);
+        TicketRoutingService.RoutingDecision routingDecision = ticketRoutingService.routeTicket(savedTicket);
+        savedTicket = ticketRepository.save(savedTicket);
 
         auditLogRepository.save(AuditLogEntity.builder()
-                .action("AUTO_CLASSIFICATION")
+                .action("TICKET_CREATED")
                 .entityType("TICKET")
                 .entityId(savedTicket.getId())
-                .performedBy("ML_ROUTER")
-                .details("Predicted issueType=" + decision.issueType()
-                        + ", priority=" + decision.priority()
-                        + ", team=" + decision.routingTeam()
-                        + ", confidence=" + decision.classificationConfidence()
-                        + ", assignee=" + (decision.assignedEmployee() != null ? decision.assignedEmployee().getName() : "UNASSIGNED"))
+                .performedBy(requester.getName())
+                .details("Ticket created with category=" + issueType
+                        + ", priority=" + priority
+                        + ", assignment=" + (routingDecision.assignedEmployee() != null
+                        ? routingDecision.assignedEmployee().getName()
+                        : "PENDING_QUEUE"))
                 .build());
 
         return toSummary(savedTicket);
@@ -123,11 +104,8 @@ public class TicketController {
     public List<TicketSummaryResponse> listTickets(
             @RequestParam(required = false) TicketStatus status,
             @RequestParam(required = false) TicketPriority priority,
-            @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "false") boolean assignedToMe,
-            HttpServletRequest httpRequest
+            @RequestParam(required = false) String search
     ) {
-        UserEntity actor = ticketAccessService.requireActor(authorizer.requireUser(httpRequest));
         List<TicketEntity> tickets;
         if (status != null && priority != null) {
             tickets = ticketRepository.findByStatusAndPriority(status, priority);
@@ -139,18 +117,15 @@ public class TicketController {
             tickets = ticketRepository.findAll();
         }
 
-        return ticketAccessService.filterVisibleTickets(actor, tickets).stream()
-                .filter(ticket -> !assignedToMe || ticket.getAssignedEmployee() != null && ticket.getAssignedEmployee().getId().equals(actor.getId()))
+        return tickets.stream()
                 .filter(ticket -> matchesSearch(ticket, search))
                 .map(this::toSummary)
                 .toList();
     }
 
     @GetMapping("/{id}")
-    public TicketDetailResponse getTicket(@PathVariable Long id, HttpServletRequest request) {
-        UserEntity actor = ticketAccessService.requireActor(authorizer.requireUser(request));
+    public TicketDetailResponse getTicket(@PathVariable Long id) {
         TicketEntity ticket = findTicket(id);
-        ticketAccessService.ensureCanViewTicket(actor, ticket);
         List<TicketCommentResponse> comments = commentRepository.findByTicketIdOrderByTimestampAsc(id)
                 .stream()
                 .map(this::toCommentResponse)
@@ -165,9 +140,10 @@ public class TicketController {
                 ticket.getIssueType(),
                 ticket.getDescription(),
                 ticket.getPriority(),
-                ticket.getRoutingTeam(),
-                ticket.getClassificationConfidence(),
                 ticket.getStatus(),
+                ticket.getAssignmentStatus(),
+                ticket.getAssignedAt(),
+                ticket.getEstimatedResolutionAt(),
                 ticket.getCreatedAt(),
                 ticket.getUpdatedAt(),
                 comments
@@ -175,87 +151,85 @@ public class TicketController {
     }
 
     @PutMapping("/{id}/status")
-    public TicketSummaryResponse updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest request, HttpServletRequest httpRequest) {
-        UserEntity actor = ticketAccessService.requireActor(authorizer.requireAnyRole(httpRequest, Role.ADMIN, Role.EMPLOYEE));
+    public TicketSummaryResponse updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest request) {
         TicketEntity ticket = findTicket(id);
-        ticketAccessService.ensureCanUpdateStatus(actor, ticket);
         String oldStatus = ticket.getStatus().toString();
         ticket.setStatus(request.status());
-        
+        if (request.status() == TicketStatus.IN_PROGRESS && ticket.getAcceptedAt() == null) {
+            ticket.setAcceptedAt(LocalDateTime.now());
+            ticket.setAssignmentStatus(TicketAssignmentStatus.ACCEPTED);
+        }
+
         auditLogRepository.save(AuditLogEntity.builder()
                 .action("STATUS_CHANGE")
                 .entityType("TICKET")
                 .entityId(id)
-                .performedBy(actor.getRole().name())
+                .performedBy("SYSTEM")
                 .details("Status changed from " + oldStatus + " to " + request.status())
                 .build());
-        
+
         return toSummary(ticketRepository.save(ticket));
     }
 
     @PutMapping("/{id}/priority")
-    public TicketSummaryResponse updatePriority(@PathVariable Long id, @RequestBody UpdatePriorityRequest request, HttpServletRequest httpRequest) {
-        UserEntity actor = ticketAccessService.requireActor(authorizer.requireAnyRole(httpRequest, Role.ADMIN));
+    public TicketSummaryResponse updatePriority(@PathVariable Long id, @RequestBody UpdatePriorityRequest request) {
         TicketEntity ticket = findTicket(id);
         String oldPriority = ticket.getPriority().toString();
         ticket.setPriority(request.priority());
-        
+        ticket.setSlaDeadline(calculateSLADeadline(request.priority()));
+        ticket.setEstimatedResolutionAt(ticket.getSlaDeadline());
+
         auditLogRepository.save(AuditLogEntity.builder()
                 .action("PRIORITY_CHANGE")
                 .entityType("TICKET")
                 .entityId(id)
-                .performedBy(actor.getRole().name())
+                .performedBy("ADMIN")
                 .details("Priority changed from " + oldPriority + " to " + request.priority())
                 .build());
-        
+
         return toSummary(ticketRepository.save(ticket));
     }
 
     @PutMapping("/{id}/assign")
-    public TicketSummaryResponse assignTicket(@PathVariable Long id, @RequestBody AssignTicketRequest request, HttpServletRequest httpRequest) {
-        UserEntity actor = ticketAccessService.requireActor(authorizer.requireAnyRole(httpRequest, Role.ADMIN));
+    public TicketSummaryResponse assignTicket(@PathVariable Long id, @RequestBody AssignTicketRequest request) {
         TicketEntity ticket = findTicket(id);
         UserEntity employee = null;
         String oldAssignment = ticket.getAssignedEmployee() != null ? ticket.getAssignedEmployee().getName() : "Unassigned";
-        
+
         if (request.employeeId() != null) {
             employee = userRepository.findById(request.employeeId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found"));
-            if (employee.getRole() != Role.EMPLOYEE) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only employees can be assigned to tickets");
-            }
+            employee.setLastAssignedAt(LocalDateTime.now());
+            userRepository.save(employee);
         }
         ticket.setAssignedEmployee(employee);
-        
+        ticket.setAssignedAt(LocalDateTime.now());
+        ticket.setAssignmentStatus(employee != null ? TicketAssignmentStatus.REASSIGNED : TicketAssignmentStatus.PENDING_ASSIGNMENT);
+
         String newAssignment = employee != null ? employee.getName() : "Unassigned";
         auditLogRepository.save(AuditLogEntity.builder()
                 .action("TICKET_ASSIGNMENT")
                 .entityType("TICKET")
                 .entityId(id)
-                .performedBy(actor.getRole().name())
+                .performedBy("ADMIN")
                 .details("Ticket reassigned from " + oldAssignment + " to " + newAssignment)
                 .build());
-        
+
         if (employee != null) {
             notificationService.createNotification(
-                employee,
-                "New Ticket Assigned",
-                "Ticket #" + id + " has been assigned to you",
-                id
+                    employee,
+                    "New Ticket Assigned",
+                    "Ticket #" + id + " has been assigned to you",
+                    id
             );
         }
-        
+
         return toSummary(ticketRepository.save(ticket));
     }
 
     @PostMapping("/{id}/comments")
-    public TicketCommentResponse addComment(@PathVariable Long id, @RequestBody AddCommentRequest request, HttpServletRequest httpRequest) {
-        UserEntity actor = ticketAccessService.requireActor(authorizer.requireUser(httpRequest));
+    public TicketCommentResponse addComment(@PathVariable Long id, @RequestBody AddCommentRequest request) {
         TicketEntity ticket = findTicket(id);
-        ticketAccessService.ensureCanViewTicket(actor, ticket);
-        if (!actor.getId().equals(request.userId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only comment as the authenticated user");
-        }
         UserEntity user = userRepository.findById(request.userId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
@@ -291,9 +265,10 @@ public class TicketController {
                 ticket.getIssueType(),
                 ticket.getDescription(),
                 ticket.getPriority(),
-                ticket.getRoutingTeam(),
-                ticket.getClassificationConfidence(),
                 ticket.getStatus(),
+                ticket.getAssignmentStatus(),
+                ticket.getAssignedAt(),
+                ticket.getEstimatedResolutionAt(),
                 ticket.getCreatedAt(),
                 ticket.getUpdatedAt()
         );

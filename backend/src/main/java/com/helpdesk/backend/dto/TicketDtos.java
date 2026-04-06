@@ -6,6 +6,7 @@ import java.util.Map;
 import com.helpdesk.backend.model.IssueType;
 import com.helpdesk.backend.model.Team;
 import com.helpdesk.backend.model.TicketPriority;
+import com.helpdesk.backend.model.TicketAssignmentStatus;
 import com.helpdesk.backend.model.TicketStatus;
 
 public class TicketDtos {
@@ -21,6 +22,9 @@ public class TicketDtos {
             Team routingTeam,
             Double classificationConfidence,
             TicketStatus status,
+            TicketAssignmentStatus assignmentStatus,
+            LocalDateTime assignedAt,
+            LocalDateTime estimatedResolutionAt,
             LocalDateTime createdAt,
             LocalDateTime updatedAt
     ) {}
@@ -45,6 +49,9 @@ public class TicketDtos {
             Team routingTeam,
             Double classificationConfidence,
             TicketStatus status,
+            TicketAssignmentStatus assignmentStatus,
+            LocalDateTime assignedAt,
+            LocalDateTime estimatedResolutionAt,
             LocalDateTime createdAt,
             LocalDateTime updatedAt,
             List<TicketCommentResponse> comments

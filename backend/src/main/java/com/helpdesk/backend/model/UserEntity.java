@@ -1,5 +1,6 @@
 package com.helpdesk.backend.model;
 
+import java.time.LocalDateTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -34,6 +35,12 @@ public class UserEntity {
     @Column(nullable = false)
     private String password;
 
+    @Column(length = 20)
+    private String phoneNumber;
+
+    @Column(unique = true, length = 50)
+    private String employeeId;
+
     @Column(nullable = false)
     private boolean seeded;
 
@@ -43,4 +50,19 @@ public class UserEntity {
 
     @Enumerated(EnumType.STRING)
     private Team team;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private EmployeeAvailabilityStatus availabilityStatus = EmployeeAvailabilityStatus.AVAILABLE;
+
+    @Column(length = 500)
+    private String skillTags;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private ExperienceLevel experienceLevel = ExperienceLevel.JUNIOR;
+
+    private LocalDateTime lastAssignedAt;
 }

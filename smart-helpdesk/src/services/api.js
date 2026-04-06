@@ -1,26 +1,15 @@
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
 
-function getAuthHeaders() {
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
-  if (!user?.id || !user?.role) {
-    return {};
-  }
-
-  return {
-    'X-User-Id': String(user.id),
-    'X-User-Role': user.role
-  };
-}
-
 async function apiRequest(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeaders(),
-      ...(options.headers || {})
-    },
-    ...options
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      ...options
+    });
+  } catch (_) {
+    throw new Error(`Cannot connect to backend at ${API_BASE_URL}. Make sure the Spring Boot server is running.`);
+  }
 
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
@@ -38,16 +27,7 @@ async function apiRequest(path, options = {}) {
     throw new Error(message);
   }
 
-  if (response.status === 204) {
-    return null;
-  }
-
-  const text = await response.text();
-  if (!text) {
-    return null;
-  }
-
-  return JSON.parse(text);
+  return response.json();
 }
 
 export function login(email, password) {
@@ -68,19 +48,15 @@ export function signup(payload) {
   });
 }
 
-export function fetchAnalytics({ assignedToMe } = {}) {
-  const params = new URLSearchParams();
-  if (assignedToMe) params.set('assignedToMe', 'true');
-  const suffix = params.toString() ? `?${params.toString()}` : '';
-  return apiRequest(`/dashboard/analytics${suffix}`);
+export function fetchAnalytics() {
+  return apiRequest('/dashboard/analytics');
 }
 
-export function fetchTickets({ status, priority, search, assignedToMe } = {}) {
+export function fetchTickets({ status, priority, search } = {}) {
   const params = new URLSearchParams();
   if (status && status !== 'ALL') params.set('status', status);
   if (priority && priority !== 'ALL') params.set('priority', priority);
   if (search) params.set('search', search);
-  if (assignedToMe) params.set('assignedToMe', 'true');
   const suffix = params.toString() ? `?${params.toString()}` : '';
   return apiRequest(`/tickets${suffix}`);
 }
@@ -133,16 +109,17 @@ export function createTicket(payload) {
   });
 }
 
-export function fetchNotifications(userId) {
-  return apiRequest(`/notifications/${userId}`);
-}
-
-export function fetchUnreadNotificationCount(userId) {
-  return apiRequest(`/notifications/${userId}/unread-count`);
-}
-
-export function markNotificationAsRead(id) {
-  return apiRequest(`/notifications/${id}/read`, {
-    method: 'PUT'
+export function analyzeTicket(description) {
+  return apiRequest('/ai/analyze', {
+    method: 'POST',
+    body: JSON.stringify({ description })
   });
+}
+
+export function fetchAuditLogs() {
+  return apiRequest('/audit-logs');
+}
+
+export function fetchTicketAuditLogs(ticketId) {
+  return apiRequest(`/audit-logs/ticket/${ticketId}`);
 }

@@ -2,8 +2,11 @@ package com.helpdesk.backend.config;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import com.helpdesk.backend.model.EmployeeAvailabilityStatus;
+import com.helpdesk.backend.model.ExperienceLevel;
 import com.helpdesk.backend.model.IssueType;
 import com.helpdesk.backend.model.ModuleName;
 import com.helpdesk.backend.model.ModulePermissionEntity;
@@ -20,20 +23,24 @@ import com.helpdesk.backend.repository.TicketCommentRepository;
 import com.helpdesk.backend.repository.TicketRepository;
 import com.helpdesk.backend.repository.UserRepository;
 import com.helpdesk.backend.repository.SLAPolicyRepository;
-import com.helpdesk.backend.service.TicketIntelligenceService;
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
 
-    private static final Map<String, String> SEEDED_CREDENTIALS = Map.of(
-            "admin@helpdesk.com", "admin123",
-            "john@helpdesk.com", "employee123",
-            "jane@helpdesk.com", "employee123",
-            "mike@helpdesk.com", "employee123",
-            "alice@company.com", "user123",
-            "bob@company.com", "user123"
+    private static final Map<String, String> SEEDED_CREDENTIALS = Map.ofEntries(
+            Map.entry("admin@helpdesk.com", "admin123"),
+            Map.entry("john@helpdesk.com", "employee123"),
+            Map.entry("jane@helpdesk.com", "employee123"),
+            Map.entry("mike@helpdesk.com", "employee123"),
+            Map.entry("priya.network@helpdesk.com", "employee123"),
+            Map.entry("arun.software@helpdesk.com", "employee123"),
+            Map.entry("neha.hardware@helpdesk.com", "employee123"),
+            Map.entry("sara@helpdesk.com", "employee123"),
+            Map.entry("helen@helpdesk.com", "employee123"),
+            Map.entry("alice@company.com", "user123"),
+            Map.entry("bob@company.com", "user123")
     );
 
     private final UserRepository userRepository;
@@ -41,149 +48,74 @@ public class DataSeeder implements CommandLineRunner {
     private final TicketCommentRepository commentRepository;
     private final ModulePermissionRepository permissionRepository;
     private final SLAPolicyRepository slaPolicyRepository;
-    private final TicketIntelligenceService ticketIntelligenceService;
 
     @Override
     public void run(String... args) {
-        if (userRepository.count() > 0) {
-            restoreSeededCredentials();
-            restoreSeededAssignments();
-            reclassifyExistingTickets();
-            return;
-        }
+        UserEntity admin = upsertBasicUser("Admin User", "admin@helpdesk.com", Role.ADMIN);
 
-        UserEntity admin = userRepository.save(UserEntity.builder()
-                .name("Admin User")
-                .email("admin@helpdesk.com")
-                .password(SEEDED_CREDENTIALS.get("admin@helpdesk.com"))
-                .seeded(true)
-                .role(Role.ADMIN)
-                .build());
+        UserEntity employeeOne = upsertEmployee(
+                "John Employee", "john@helpdesk.com", "E-NET-101", Team.NETWORK,
+                ExperienceLevel.SENIOR, EmployeeAvailabilityStatus.AVAILABLE,
+                "network,vpn,wifi,router,firewall,switch,lan");
 
-        UserEntity employeeOne = userRepository.save(UserEntity.builder()
-                .name("John Employee")
-                .email("john@helpdesk.com")
-                .password(SEEDED_CREDENTIALS.get("john@helpdesk.com"))
-                .seeded(true)
-                .role(Role.EMPLOYEE)
-                .team(Team.HARDWARE)
-                .build());
+        upsertEmployee(
+                "Priya Network", "priya.network@helpdesk.com", "E-NET-106", Team.NETWORK,
+                ExperienceLevel.MID, EmployeeAvailabilityStatus.AVAILABLE,
+                "network,wan,vpn,router,connectivity,dns");
 
-        UserEntity employeeTwo = userRepository.save(UserEntity.builder()
-                .name("Jane Employee")
-                .email("jane@helpdesk.com")
-                .password(SEEDED_CREDENTIALS.get("jane@helpdesk.com"))
-                .seeded(true)
-                .role(Role.EMPLOYEE)
-                .team(Team.SOFTWARE)
-                .build());
+        UserEntity employeeTwo = upsertEmployee(
+                "Jane Employee", "jane@helpdesk.com", "E-SW-102", Team.SOFTWARE,
+                ExperienceLevel.MID, EmployeeAvailabilityStatus.AVAILABLE,
+                "software,java,email,outlook,database,application,login");
 
-        UserEntity employeeThree = userRepository.save(UserEntity.builder()
-                .name("Mike Employee")
-                .email("mike@helpdesk.com")
-                .password(SEEDED_CREDENTIALS.get("mike@helpdesk.com"))
-                .seeded(true)
-                .role(Role.EMPLOYEE)
-                .team(Team.NETWORK)
-                .build());
+        upsertEmployee(
+                "Arun Software", "arun.software@helpdesk.com", "E-SW-107", Team.SOFTWARE,
+                ExperienceLevel.SENIOR, EmployeeAvailabilityStatus.AVAILABLE,
+                "software,api,java,spring,database,browser,erp");
 
-        UserEntity userOne = userRepository.save(UserEntity.builder()
-                .name("Alice User")
-                .email("alice@company.com")
-                .password(SEEDED_CREDENTIALS.get("alice@company.com"))
-                .seeded(true)
-                .role(Role.USER)
-                .build());
+        UserEntity employeeThree = upsertEmployee(
+                "Mike Employee", "mike@helpdesk.com", "E-HW-103", Team.HARDWARE,
+                ExperienceLevel.SENIOR, EmployeeAvailabilityStatus.AVAILABLE,
+                "hardware,laptop,printer,keyboard,monitor,desktop");
 
-        UserEntity userTwo = userRepository.save(UserEntity.builder()
-                .name("Bob User")
-                .email("bob@company.com")
-                .password(SEEDED_CREDENTIALS.get("bob@company.com"))
-                .seeded(true)
-                .role(Role.USER)
-                .build());
+        upsertEmployee(
+                "Neha Hardware", "neha.hardware@helpdesk.com", "E-HW-108", Team.HARDWARE,
+                ExperienceLevel.MID, EmployeeAvailabilityStatus.AVAILABLE,
+                "hardware,printer,scanner,laptop,display,device");
 
-        TicketEntity ticketOne = ticketRepository.save(TicketEntity.builder()
-                .requester(userOne)
-                .assignedEmployee(employeeTwo)
-                .issueType(IssueType.SOFTWARE)
-                .description("Unable to access email client. Getting authentication error.")
-                .priority(TicketPriority.HIGH)
-                .status(TicketStatus.IN_PROGRESS)
-                .build());
+        UserEntity securityEmployee = upsertEmployee(
+                "Sara Security", "sara@helpdesk.com", "E-SEC-104", Team.SECURITY,
+                ExperienceLevel.SENIOR, EmployeeAvailabilityStatus.AVAILABLE,
+                "security,iam,access,phishing,firewall,compliance");
 
-        TicketEntity ticketTwo = ticketRepository.save(TicketEntity.builder()
-                .requester(userTwo)
-                .assignedEmployee(employeeOne)
-                .issueType(IssueType.HARDWARE)
-                .description("Printer not working in office")
-                .priority(TicketPriority.MEDIUM)
-                .status(TicketStatus.OPEN)
-                .build());
+        UserEntity hrEmployee = upsertEmployee(
+                "Helen HR", "helen@helpdesk.com", "E-HR-105", Team.HR,
+                ExperienceLevel.MID, EmployeeAvailabilityStatus.AVAILABLE,
+                "hr,payroll,attendance,leave,policy,onboarding");
 
-        ticketRepository.saveAll(List.of(
-                TicketEntity.builder()
-                        .requester(userOne)
-                        .assignedEmployee(employeeThree)
-                        .issueType(IssueType.NETWORK)
-                        .description("Slow internet connection")
-                        .priority(TicketPriority.LOW)
-                        .status(TicketStatus.RESOLVED)
-                        .build(),
-                TicketEntity.builder()
-                        .requester(userTwo)
-                        .issueType(IssueType.SOFTWARE)
-                        .description("Need office suite installation")
-                        .priority(TicketPriority.MEDIUM)
-                        .status(TicketStatus.OPEN)
-                        .build(),
-                TicketEntity.builder()
-                        .requester(userOne)
-                        .assignedEmployee(employeeOne)
-                        .issueType(IssueType.HARDWARE)
-                        .description("Laptop screen flickering")
-                        .priority(TicketPriority.HIGH)
-                        .status(TicketStatus.IN_PROGRESS)
-                        .build(),
-                TicketEntity.builder()
-                        .requester(userTwo)
-                        .assignedEmployee(employeeThree)
-                        .issueType(IssueType.NETWORK)
-                        .description("Cannot connect to VPN")
-                        .priority(TicketPriority.HIGH)
-                        .status(TicketStatus.OPEN)
-                        .build()
-        ));
-
-        commentRepository.saveAll(List.of(
-                TicketCommentEntity.builder()
-                        .ticket(ticketOne)
-                        .user(userOne)
-                        .message("I cannot login to my email")
-                        .build(),
-                TicketCommentEntity.builder()
-                        .ticket(ticketOne)
-                        .user(employeeOne)
-                        .message("Working on this issue")
-                        .build(),
-                TicketCommentEntity.builder()
-                        .ticket(ticketTwo)
-                        .user(userTwo)
-                        .message("Please resolve quickly")
-                        .build()
-        ));
+        UserEntity userOne = upsertBasicUser("Alice User", "alice@company.com", Role.USER);
+        UserEntity userTwo = upsertBasicUser("Bob User", "bob@company.com", Role.USER);
 
         seedPermissions(Role.USER, true, true, false, false, false);
         seedPermissions(Role.EMPLOYEE, true, false, true, false, true);
         seedPermissions(Role.ADMIN, true, false, false, true, true);
-
         seedSLAPolicies();
-        reclassifyExistingTickets();
+        restoreSeededCredentials();
+
+        if (ticketRepository.count() == 0) {
+            seedSampleTickets(userOne, userTwo, employeeOne, employeeTwo, employeeThree, securityEmployee, hrEmployee);
+        }
     }
 
     private void seedSLAPolicies() {
         if (slaPolicyRepository.count() == 0) {
             slaPolicyRepository.saveAll(List.of(
+                SLAPolicyEntity.builder()
+                    .priority(TicketPriority.CRITICAL)
+                    .responseTimeHours(1)
+                    .resolutionTimeHours(2)
+                    .active(true)
+                    .build(),
                 SLAPolicyEntity.builder()
                     .priority(TicketPriority.HIGH)
                     .responseTimeHours(1)
@@ -212,116 +144,127 @@ public class DataSeeder implements CommandLineRunner {
             if (expectedPassword != null) {
                 user.setSeeded(true);
                 user.setPassword(expectedPassword);
-                if ("john@helpdesk.com".equals(user.getEmail())) {
-                    user.setName("John Employee");
-                    user.setRole(Role.EMPLOYEE);
-                    user.setTeam(Team.HARDWARE);
-                } else if ("jane@helpdesk.com".equals(user.getEmail())) {
-                    user.setName("Jane Employee");
-                    user.setRole(Role.EMPLOYEE);
-                    user.setTeam(Team.SOFTWARE);
-                } else if ("mike@helpdesk.com".equals(user.getEmail())) {
-                    user.setName("Mike Employee");
-                    user.setRole(Role.EMPLOYEE);
-                    user.setTeam(Team.NETWORK);
-                }
                 userRepository.save(user);
             }
         });
     }
 
-    private void restoreSeededAssignments() {
-        UserEntity john = userRepository.findByEmail("john@helpdesk.com").orElse(null);
-        UserEntity jane = userRepository.findByEmail("jane@helpdesk.com").orElse(null);
-        UserEntity mike = userRepository.findByEmail("mike@helpdesk.com").orElse(null);
-        if (john == null || jane == null || mike == null) {
-            return;
-        }
-
-        ticketRepository.findAll().forEach(ticket -> {
-            if ("Unable to access email client. Getting authentication error.".equals(ticket.getDescription())) {
-                ticket.setAssignedEmployee(jane);
-            } else if ("Printer not working in office".equals(ticket.getDescription())) {
-                ticket.setAssignedEmployee(john);
-            } else if ("Slow internet connection".equals(ticket.getDescription())
-                    || "Cannot connect to VPN".equals(ticket.getDescription())) {
-                ticket.setAssignedEmployee(mike);
-            } else if ("Laptop screen flickering".equals(ticket.getDescription())) {
-                ticket.setAssignedEmployee(john);
-            } else if (ticket.getRequester() != null
-                    && ticket.getRequester().isSeeded()
-                    && ticket.getIssueType() != null
-                    && ticket.getAssignedEmployee() != null
-                    && ticket.getAssignedEmployee().isSeeded()
-                    && ticket.getAssignedEmployee().getRole() == Role.EMPLOYEE
-                    && !isSpecialistFor(ticket.getAssignedEmployee(), ticket.getIssueType())) {
-                ticket.setAssignedEmployee(defaultAssigneeFor(ticket.getIssueType(), john, jane, mike));
-            }
-            ticketRepository.save(ticket);
-        });
+    private UserEntity upsertBasicUser(String name, String email, Role role) {
+        Optional<UserEntity> existing = userRepository.findByEmail(email);
+        UserEntity user = existing.orElseGet(UserEntity::new);
+        user.setName(name);
+        user.setEmail(email);
+        user.setPassword(SEEDED_CREDENTIALS.getOrDefault(email, "user123"));
+        user.setSeeded(true);
+        user.setRole(role);
+        return userRepository.save(user);
     }
 
-    private boolean isSpecialistFor(UserEntity employee, IssueType issueType) {
-        if (employee.getTeam() == null || issueType == null) {
-            return false;
-        }
-        return switch (issueType) {
-            case HARDWARE -> employee.getTeam() == Team.HARDWARE;
-            case SOFTWARE -> employee.getTeam() == Team.SOFTWARE;
-            case NETWORK -> employee.getTeam() == Team.NETWORK;
-        };
+    private UserEntity upsertEmployee(String name, String email, String employeeId, Team team,
+                                      ExperienceLevel experienceLevel, EmployeeAvailabilityStatus availabilityStatus,
+                                      String skillTags) {
+        Optional<UserEntity> existing = userRepository.findByEmail(email);
+        UserEntity user = existing.orElseGet(UserEntity::new);
+        user.setName(name);
+        user.setEmail(email);
+        user.setPassword(SEEDED_CREDENTIALS.getOrDefault(email, "employee123"));
+        user.setEmployeeId(employeeId);
+        user.setSeeded(true);
+        user.setRole(Role.EMPLOYEE);
+        user.setTeam(team);
+        user.setExperienceLevel(experienceLevel);
+        user.setAvailabilityStatus(availabilityStatus);
+        user.setSkillTags(skillTags);
+        return userRepository.save(user);
     }
 
-    private UserEntity defaultAssigneeFor(IssueType issueType, UserEntity john, UserEntity jane, UserEntity mike) {
-        return switch (issueType) {
-            case HARDWARE -> john;
-            case SOFTWARE -> jane;
-            case NETWORK -> mike;
-        };
-    }
+    private void seedSampleTickets(UserEntity userOne, UserEntity userTwo, UserEntity networkEmployee,
+                                   UserEntity softwareEmployee, UserEntity hardwareEmployee,
+                                   UserEntity securityEmployee, UserEntity hrEmployee) {
+        TicketEntity ticketOne = ticketRepository.save(TicketEntity.builder()
+                .requester(userOne)
+                .assignedEmployee(softwareEmployee)
+                .issueType(IssueType.SOFTWARE)
+                .description("Unable to access email client. Getting authentication error.")
+                .priority(TicketPriority.HIGH)
+                .status(TicketStatus.IN_PROGRESS)
+                .build());
 
-    private void reclassifyExistingTickets() {
-        ticketRepository.findAll().stream()
-                .filter(ticket -> ticket.getDescription() != null && !ticket.getDescription().isBlank())
-                .forEach(ticket -> {
-                    TicketIntelligenceService.TicketDecision decision =
-                            ticketIntelligenceService.analyze(ticket.getDescription());
-                    boolean changed = false;
+        TicketEntity ticketTwo = ticketRepository.save(TicketEntity.builder()
+                .requester(userTwo)
+                .assignedEmployee(hardwareEmployee)
+                .issueType(IssueType.HARDWARE)
+                .description("Printer not working in office")
+                .priority(TicketPriority.MEDIUM)
+                .status(TicketStatus.OPEN)
+                .build());
 
-                    if (ticket.getIssueType() != decision.issueType()) {
-                        ticket.setIssueType(decision.issueType());
-                        changed = true;
-                    }
-                    if (ticket.getPriority() != decision.priority()) {
-                        ticket.setPriority(decision.priority());
-                        changed = true;
-                    }
-                    if (ticket.getRoutingTeam() != decision.routingTeam()) {
-                        ticket.setRoutingTeam(decision.routingTeam());
-                        changed = true;
-                    }
-                    if (ticket.getClassificationConfidence() == null
-                            || !ticket.getClassificationConfidence().equals(decision.classificationConfidence())) {
-                        ticket.setClassificationConfidence(decision.classificationConfidence());
-                        changed = true;
-                    }
+        TicketEntity ticketThree = ticketRepository.save(TicketEntity.builder()
+                .requester(userOne)
+                .assignedEmployee(networkEmployee)
+                .issueType(IssueType.NETWORK)
+                .description("Slow internet connection")
+                .priority(TicketPriority.LOW)
+                .status(TicketStatus.RESOLVED)
+                .build());
 
-                    Long currentAssigneeId = ticket.getAssignedEmployee() != null ? ticket.getAssignedEmployee().getId() : null;
-                    Long predictedAssigneeId = decision.assignedEmployee() != null ? decision.assignedEmployee().getId() : null;
-                    if ((currentAssigneeId == null && predictedAssigneeId != null)
-                            || (currentAssigneeId != null && !currentAssigneeId.equals(predictedAssigneeId))) {
-                        ticket.setAssignedEmployee(decision.assignedEmployee());
-                        changed = true;
-                    }
+        TicketEntity ticketFour = ticketRepository.save(TicketEntity.builder()
+                .requester(userTwo)
+                .assignedEmployee(securityEmployee)
+                .issueType(IssueType.SECURITY)
+                .description("Suspicious phishing email received by finance team")
+                .priority(TicketPriority.CRITICAL)
+                .status(TicketStatus.OPEN)
+                .build());
 
-                    if (changed) {
-                        ticketRepository.save(ticket);
-                    }
-                });
+        TicketEntity ticketFive = ticketRepository.save(TicketEntity.builder()
+                .requester(userOne)
+                .assignedEmployee(hrEmployee)
+                .issueType(IssueType.HR)
+                .description("Unable to access payroll portal")
+                .priority(TicketPriority.MEDIUM)
+                .status(TicketStatus.OPEN)
+                .build());
+
+        commentRepository.saveAll(List.of(
+                TicketCommentEntity.builder()
+                        .ticket(ticketOne)
+                        .user(userOne)
+                        .message("I cannot login to my email")
+                        .build(),
+                TicketCommentEntity.builder()
+                        .ticket(ticketOne)
+                        .user(softwareEmployee)
+                        .message("Working on this issue")
+                        .build(),
+                TicketCommentEntity.builder()
+                        .ticket(ticketTwo)
+                        .user(userTwo)
+                        .message("Please resolve quickly")
+                        .build(),
+                TicketCommentEntity.builder()
+                        .ticket(ticketThree)
+                        .user(networkEmployee)
+                        .message("Investigating the network latency")
+                        .build(),
+                TicketCommentEntity.builder()
+                        .ticket(ticketFour)
+                        .user(securityEmployee)
+                        .message("Security team is reviewing the message headers")
+                        .build(),
+                TicketCommentEntity.builder()
+                        .ticket(ticketFive)
+                        .user(hrEmployee)
+                        .message("HR portal access is being checked")
+                        .build()
+        ));
     }
 
     private void seedPermissions(Role role, boolean raiseTicket, boolean selfServiceTools,
                                  boolean smartSuggestions, boolean modelRetraining, boolean fraudAlerts) {
+        if (!permissionRepository.findByRole(role).isEmpty()) {
+            return;
+        }
         permissionRepository.saveAll(List.of(
                 permission(role, ModuleName.RAISE_TICKET, raiseTicket),
                 permission(role, ModuleName.SELF_SERVICE_TOOLS, selfServiceTools),

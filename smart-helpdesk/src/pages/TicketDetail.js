@@ -4,14 +4,14 @@ import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import Chatbot from '../components/Chatbot';
 import { formatDate } from '../utils/helpers';
-import { addTicketComment, assignTicket, fetchTicketById, fetchUsers, updateTicketStatus, updateTicketPriority } from '../services/api';
+import { addTicketComment, assignTicket, fetchTicketById, fetchUsers, updateTicketStatus, updateTicketPriority, fetchTicketAuditLogs } from '../services/api';
 import './TicketDetail.css';
 
 function TicketDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
-  const userRole = user.role;
+  const canChangeStatus = user.role === 'EMPLOYEE';
 
   const [ticket, setTicket] = useState(null);
   const [employees, setEmployees] = useState([]);
@@ -20,32 +20,47 @@ function TicketDetail() {
   const [status, setStatus] = useState('OPEN');
   const [priority, setPriority] = useState('LOW');
   const [assignedEmployee, setAssignedEmployee] = useState('');
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [slaStatus, setSlaStatus] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const ticketData = await fetchTicketById(id);
+        const [ticketData, employeeData] = await Promise.all([
+          fetchTicketById(id),
+          fetchUsers('EMPLOYEE')
+        ]);
         setTicket(ticketData);
         setStatus(ticketData.status);
         setPriority(ticketData.priority);
         setAssignedEmployee(ticketData.assignedEmployeeId || '');
+        setEmployees(employeeData);
 
-        if (userRole === 'ADMIN') {
-          const employeeData = await fetchUsers('EMPLOYEE');
-          setEmployees(employeeData);
-
-          const recommendedTeam = ticketData.routingTeam || ticketData.issueType;
-          const teamMatch = employeeData.filter((emp) =>
-            emp.team && emp.team === recommendedTeam
-          );
-          setFilteredEmployees(teamMatch.length > 0 ? teamMatch : employeeData);
+        // SLA status
+        if (ticketData.slaDeadline) {
+          const now = new Date();
+          const deadline = new Date(ticketData.slaDeadline);
+          const hoursLeft = (deadline - now) / (1000 * 60 * 60);
+          setSlaStatus({ deadline: ticketData.slaDeadline, hoursLeft: hoursLeft.toFixed(1), breached: hoursLeft < 0 });
         }
+
+        // Audit logs
+        try {
+          const logs = await fetchTicketAuditLogs(id);
+          setAuditLogs(logs);
+        } catch (_) {}
+        
+        // Filter employees by team matching issue type
+        const teamMatch = employeeData.filter(emp => 
+          emp.team && emp.team === ticketData.issueType
+        );
+        setFilteredEmployees(teamMatch.length > 0 ? teamMatch : employeeData);
       } catch (error) {
         alert(error.message || 'Failed to load ticket');
       }
     };
     loadData();
-  }, [id, userRole]);
+  }, [id]);
 
   if (!ticket) {
     return <div>Loading ticket...</div>;
@@ -146,14 +161,6 @@ function TicketDetail() {
                     <span>{ticket.issueType}</span>
                   </div>
                   <div className="info-row">
-                    <label>Support Team</label>
-                    <span>{ticket.routingTeam || ticket.issueType}</span>
-                  </div>
-                  <div className="info-row">
-                    <label>Assigned Employee</label>
-                    <span>{ticket.assignedEmployeeName || 'Unassigned'}</span>
-                  </div>
-                  <div className="info-row">
                     <label>Description</label>
                     <p className="description-text">{ticket.description}</p>
                   </div>
@@ -195,15 +202,17 @@ function TicketDetail() {
               <div className="actions-card">
                 <h3>Actions</h3>
 
-                <div className="action-group">
-                  <label>Change Status</label>
-                  <select value={status} onChange={(e) => handleStatusChange(e.target.value)}>
-                    <option value="OPEN">Open</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="RESOLVED">Resolved</option>
-                    <option value="CLOSED">Closed</option>
-                  </select>
-                </div>
+                {canChangeStatus && (
+                  <div className="action-group">
+                    <label>Change Status</label>
+                    <select value={status} onChange={(e) => handleStatusChange(e.target.value)}>
+                      <option value="OPEN">Open</option>
+                      <option value="IN_PROGRESS">In Progress</option>
+                      <option value="RESOLVED">Resolved</option>
+                      <option value="CLOSED">Closed</option>
+                    </select>
+                  </div>
+                )}
 
                 {user.role === 'ADMIN' && (
                   <div className="action-group">
@@ -220,7 +229,7 @@ function TicketDetail() {
                   <>
                     <div className="action-group">
                       <label>Recommended Team</label>
-                      <p className="info-text team-badge">{ticket.routingTeam || ticket.issueType} Team</p>
+                      <p className="info-text team-badge">{ticket.issueType} Team</p>
                     </div>
                     
                     <div className="action-group">
@@ -252,6 +261,33 @@ function TicketDetail() {
                   <label>Last Updated</label>
                   <p className="info-text">{formatDate(ticket.updatedAt)}</p>
                 </div>
+
+                {slaStatus && (
+                  <div className="action-group">
+                    <label>SLA Status</label>
+                    <div className={`sla-indicator ${slaStatus.breached ? 'sla-breached' : 'sla-ok'}`}>
+                      {slaStatus.breached
+                        ? `⚠️ SLA Breached`
+                        : `✅ ${slaStatus.hoursLeft}h remaining`}
+                      <small>{new Date(slaStatus.deadline).toLocaleString()}</small>
+                    </div>
+                  </div>
+                )}
+
+                {auditLogs.length > 0 && (
+                  <div className="action-group">
+                    <label>Activity History</label>
+                    <div className="audit-log-list">
+                      {auditLogs.map(log => (
+                        <div key={log.id} className="audit-log-item">
+                          <span className="audit-action">{log.action.replace('_', ' ')}</span>
+                          <span className="audit-detail">{log.details}</span>
+                          <span className="audit-time">{new Date(log.timestamp).toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

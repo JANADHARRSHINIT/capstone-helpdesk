@@ -1,6 +1,5 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchNotifications as loadNotifications, fetchUnreadNotificationCount, markNotificationAsRead } from '../services/api';
 import './Navbar.css';
 
 function Navbar({ title, userName }) {
@@ -12,11 +11,14 @@ function Navbar({ title, userName }) {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   const fetchNotifications = useCallback(async () => {
+    if (!user.id) return;
     try {
-      const [notifData, countData] = await Promise.all([
-        loadNotifications(user.id),
-        fetchUnreadNotificationCount(user.id)
+      const [notifResponse, countResponse] = await Promise.all([
+        fetch(`http://localhost:8080/api/notifications/${user.id}`),
+        fetch(`http://localhost:8080/api/notifications/${user.id}/unread-count`)
       ]);
+      const notifData = await notifResponse.json();
+      const countData = await countResponse.json();
       setNotifications(notifData.slice(0, 5));
       setUnreadCount(countData.count);
     } catch (error) {
@@ -25,18 +27,15 @@ function Navbar({ title, userName }) {
   }, [user.id]);
 
   useEffect(() => {
-    if (!user.id) {
-      return undefined;
-    }
-
+    if (!user.id) return undefined;
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
-  }, [fetchNotifications, user.id]);
+  }, [user.id, fetchNotifications]);
 
   const markAsRead = async (id) => {
     try {
-      await markNotificationAsRead(id);
+      await fetch(`http://localhost:8080/api/notifications/${id}/read`, { method: 'PUT' });
       fetchNotifications();
     } catch (error) {
       console.error('Failed to mark as read');
