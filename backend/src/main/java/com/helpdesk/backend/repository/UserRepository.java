@@ -3,11 +3,18 @@ package com.helpdesk.backend.repository;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import com.helpdesk.backend.model.EmployeeAvailabilityStatus;
+import com.helpdesk.backend.model.ExperienceLevel;
 import com.helpdesk.backend.model.Role;
+import com.helpdesk.backend.model.Team;
 import com.helpdesk.backend.model.UserEntity;
 
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
     Optional<UserEntity> findByEmail(String email);
+    Optional<UserEntity> findByEmployeeId(String employeeId);
     List<UserEntity> findByRole(Role role);
+    List<UserEntity> findByRoleAndTeam(Role role, Team team);
+    List<UserEntity> findByRoleAndTeamAndAvailabilityStatusNot(Role role, Team team, EmployeeAvailabilityStatus availabilityStatus);
+    List<UserEntity> findByRoleAndTeamAndExperienceLevel(Role role, Team team, ExperienceLevel experienceLevel);
     List<UserEntity> findBySeededTrue();
 }

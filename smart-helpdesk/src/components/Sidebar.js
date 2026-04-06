@@ -11,6 +11,7 @@ function Sidebar({ role }) {
     { path: '/my-issues', label: 'My Issues', icon: '\u{1F4DD}', roles: ['USER'] },
     { path: '/users', label: 'Users', icon: '\u{1F465}', roles: ['ADMIN'] },
     { path: '/reports', label: 'Reports', icon: '\u{1F4C8}', roles: ['ADMIN'] },
+    { path: '/audit-logs', label: 'Audit Logs', icon: '\u{1F4CB}', roles: ['ADMIN'] },
     { path: '/settings', label: 'Settings', icon: '\u2699\uFE0F', roles: ['ADMIN', 'EMPLOYEE', 'USER'] }
   ];
 

@@ -59,6 +59,17 @@ public class TicketEntity {
     @Builder.Default
     private Integer escalationLevel = 0;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private TicketAssignmentStatus assignmentStatus = TicketAssignmentStatus.PENDING_ASSIGNMENT;
+
+    private LocalDateTime assignedAt;
+
+    private LocalDateTime acceptedAt;
+
+    private LocalDateTime estimatedResolutionAt;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 

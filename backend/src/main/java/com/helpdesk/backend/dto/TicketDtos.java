@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import com.helpdesk.backend.model.IssueType;
 import com.helpdesk.backend.model.TicketPriority;
+import com.helpdesk.backend.model.TicketAssignmentStatus;
 import com.helpdesk.backend.model.TicketStatus;
 
 public class TicketDtos {
@@ -18,6 +19,9 @@ public class TicketDtos {
             String description,
             TicketPriority priority,
             TicketStatus status,
+            TicketAssignmentStatus assignmentStatus,
+            LocalDateTime assignedAt,
+            LocalDateTime estimatedResolutionAt,
             LocalDateTime createdAt,
             LocalDateTime updatedAt
     ) {}
@@ -40,6 +44,9 @@ public class TicketDtos {
             String description,
             TicketPriority priority,
             TicketStatus status,
+            TicketAssignmentStatus assignmentStatus,
+            LocalDateTime assignedAt,
+            LocalDateTime estimatedResolutionAt,
             LocalDateTime createdAt,
             LocalDateTime updatedAt,
             List<TicketCommentResponse> comments

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { createTicket } from '../services/api';
+import { analyzeTicket, createTicket } from '../services/api';
 import './Chatbot.css';
 
 function Chatbot({ onTicketCreated }) {
@@ -8,111 +8,79 @@ function Chatbot({ onTicketCreated }) {
     { text: 'Hi! I\'m your IT support assistant. How can I help you today?', sender: 'bot' }
   ]);
   const [input, setInput] = useState('');
-  const [awaitingTicket, setAwaitingTicket] = useState(false);
-  const [ticketData, setTicketData] = useState({});
+  const [isCreatingTicket, setIsCreatingTicket] = useState(false);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const detectIssueType = (text) => {
-    const lower = text.toLowerCase();
-    if (lower.includes('network') || lower.includes('internet') || lower.includes('wifi') || lower.includes('vpn')) return 'NETWORK';
-    if (lower.includes('software') || lower.includes('application') || lower.includes('app') || lower.includes('email')) return 'SOFTWARE';
-    if (lower.includes('hardware') || lower.includes('laptop') || lower.includes('printer') || lower.includes('mouse') || lower.includes('keyboard')) return 'HARDWARE';
-    return 'SOFTWARE';
-  };
-
-  const detectPriority = (text) => {
-    const lower = text.toLowerCase();
-    if (lower.includes('urgent') || lower.includes('critical') || lower.includes('asap') || lower.includes('immediately')) return 'HIGH';
-    if (lower.includes('soon') || lower.includes('important')) return 'MEDIUM';
-    return 'LOW';
+  const appendBotMessage = (text) => {
+    setMessages((prev) => [...prev, { text, sender: 'bot' }]);
   };
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isCreatingTicket) return;
 
     const userMessage = input.trim();
+    const lower = userMessage.toLowerCase();
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    const isUserModule = user?.role === 'USER';
+
     setMessages((prev) => [...prev, { text: userMessage, sender: 'user' }]);
     setInput('');
 
-    if (awaitingTicket) {
-      if (userMessage.toLowerCase() === 'yes') {
-        try {
-          const user = JSON.parse(localStorage.getItem('user'));
-          await createTicket({
-            requesterId: user.id,
-            issueType: ticketData.issueType,
-            description: ticketData.description,
-            priority: ticketData.priority
-          });
-          setMessages((prev) => [...prev, { 
-            text: 'Great! Your ticket has been created successfully. You can track it in "My Issues" page.', 
-            sender: 'bot' 
-          }]);
-          if (onTicketCreated) onTicketCreated();
-        } catch (error) {
-          setMessages((prev) => [...prev, { 
-            text: 'Sorry, there was an error creating your ticket. Please try again.', 
-            sender: 'bot' 
-          }]);
-        }
-        setAwaitingTicket(false);
-        setTicketData({});
-      } else {
-        setMessages((prev) => [...prev, { 
-          text: 'No problem! How else can I help you?', 
-          sender: 'bot' 
-        }]);
-        setAwaitingTicket(false);
-        setTicketData({});
-      }
+    if (lower.includes('status') || lower.includes('track')) {
+      appendBotMessage('You can check your ticket status in the "My Issues" page from the sidebar.');
       return;
     }
 
-    const lower = userMessage.toLowerCase();
-    
-    if (lower.includes('issue') || lower.includes('problem') || lower.includes('help') || lower.includes('not working') || lower.includes('error')) {
-      const issueType = detectIssueType(userMessage);
-      const priority = detectPriority(userMessage);
-      
-      setTicketData({
-        issueType,
+    if (lower.includes('hello') || lower === 'hi' || lower === 'hey') {
+      appendBotMessage('Hello! Describe the issue you are facing, and I will create a ticket from this chat.');
+      return;
+    }
+
+    if (!isUserModule) {
+      appendBotMessage('Ticket creation through chat is enabled for users. You can still review and manage tickets from the dashboard pages.');
+      return;
+    }
+
+    if (userMessage.length < 10) {
+      appendBotMessage('Please describe the issue in a little more detail so I can create the right ticket for you.');
+      return;
+    }
+
+    setIsCreatingTicket(true);
+    appendBotMessage('Analyzing your issue and creating a ticket now...');
+
+    try {
+      const analysis = await analyzeTicket(userMessage);
+      const ticket = await createTicket({
+        requesterId: user.id,
+        issueType: analysis.suggestedCategory,
         description: userMessage,
-        priority
+        priority: analysis.suggestedPriority
       });
-      
-      setTimeout(() => {
-        setMessages((prev) => [...prev, { 
-          text: `I understand you're facing a ${issueType.toLowerCase()} issue. I've detected this as ${priority.toLowerCase()} priority. Would you like me to create a ticket for you? (Reply with "yes" or "no")`, 
-          sender: 'bot' 
-        }]);
-        setAwaitingTicket(true);
-      }, 500);
-    } else if (lower.includes('status') || lower.includes('track')) {
-      setTimeout(() => {
-        setMessages((prev) => [...prev, { 
-          text: 'You can check your ticket status in the "My Issues" page from the sidebar.', 
-          sender: 'bot' 
-        }]);
-      }, 500);
-    } else if (lower.includes('hello') || lower.includes('hi')) {
-      setTimeout(() => {
-        setMessages((prev) => [...prev, { 
-          text: 'Hello! How can I assist you today?', 
-          sender: 'bot' 
-        }]);
-      }, 500);
-    } else {
-      setTimeout(() => {
-        setMessages((prev) => [...prev, { 
-          text: 'I can help you with IT issues. Please describe your problem and I\'ll create a ticket for you.', 
-          sender: 'bot' 
-        }]);
-      }, 500);
+
+      const duplicateText = analysis.possibleDuplicates?.length
+        ? ` Similar tickets found: ${analysis.possibleDuplicates.map((item) => `#${item.id}`).join(', ')}.`
+        : '';
+      const routingText = ticket.assignedEmployeeName
+        ? ` It was routed to ${ticket.assignedEmployeeName}.`
+        : ` It was routed to the ${ticket.issueType.toLowerCase()} team queue.`;
+
+      appendBotMessage(
+        `Ticket #${ticket.id} has been created. I categorized it as ${ticket.issueType.toLowerCase()} with ${ticket.priority.toLowerCase()} priority.${routingText}${duplicateText} ${analysis.suggestedSolution}`
+      );
+
+      if (onTicketCreated) {
+        onTicketCreated();
+      }
+    } catch (error) {
+      appendBotMessage(error.message || 'Sorry, there was an error creating your ticket. Please try again.');
+    } finally {
+      setIsCreatingTicket(false);
     }
   };
 
@@ -147,9 +115,12 @@ function Chatbot({ onTicketCreated }) {
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message..."
+              placeholder="Describe your IT issue here..."
+              disabled={isCreatingTicket}
             />
-            <button type="submit">Send</button>
+            <button type="submit" disabled={isCreatingTicket}>
+              {isCreatingTicket ? 'Creating...' : 'Send'}
+            </button>
           </form>
         </div>
       )}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
@@ -14,7 +14,7 @@ function MyIssues() {
   const user = JSON.parse(localStorage.getItem('user'));
   const navigate = useNavigate();
 
-  const loadTickets = async () => {
+  const loadTickets = useCallback(async () => {
     try {
       const data = await fetchTickets({
         status: statusFilter,
@@ -25,11 +25,11 @@ function MyIssues() {
     } catch (error) {
       alert(error.message || 'Failed to load tickets');
     }
-  };
+  }, [priorityFilter, search, statusFilter]);
 
   useEffect(() => {
     loadTickets();
-  }, [statusFilter, priorityFilter, search]);
+  }, [loadTickets]);
 
   const getPriorityClass = (priority) => {
     if (priority === 'HIGH') return 'badge-high';

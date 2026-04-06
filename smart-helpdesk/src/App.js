@@ -8,6 +8,7 @@ import TicketDetail from './pages/TicketDetail';
 import Settings from './pages/Settings';
 import Users from './pages/Users';
 import Reports from './pages/Reports';
+import AuditLogs from './pages/AuditLogs';
 import ProtectedRoute from './components/ProtectedRoute';
 import './styles/global.css';
 
@@ -22,9 +23,11 @@ function App() {
         <Route path="/analytics" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/issues" element={<ProtectedRoute><Issues /></ProtectedRoute>} />
         <Route path="/my-issues" element={<ProtectedRoute><MyIssues /></ProtectedRoute>} />
+        <Route path="/create-ticket" element={<Navigate to="/my-issues" replace />} />
         <Route path="/ticket/:id" element={<ProtectedRoute><TicketDetail /></ProtectedRoute>} />
         <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+        <Route path="/audit-logs" element={<ProtectedRoute><AuditLogs /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>

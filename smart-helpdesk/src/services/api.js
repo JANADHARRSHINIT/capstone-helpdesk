@@ -1,10 +1,15 @@
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
 
 async function apiRequest(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-    ...options
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      ...options
+    });
+  } catch (_) {
+    throw new Error(`Cannot connect to backend at ${API_BASE_URL}. Make sure the Spring Boot server is running.`);
+  }
 
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
@@ -102,4 +107,19 @@ export function createTicket(payload) {
     method: 'POST',
     body: JSON.stringify(payload)
   });
+}
+
+export function analyzeTicket(description) {
+  return apiRequest('/ai/analyze', {
+    method: 'POST',
+    body: JSON.stringify({ description })
+  });
+}
+
+export function fetchAuditLogs() {
+  return apiRequest('/audit-logs');
+}
+
+export function fetchTicketAuditLogs(ticketId) {
+  return apiRequest(`/audit-logs/ticket/${ticketId}`);
 }

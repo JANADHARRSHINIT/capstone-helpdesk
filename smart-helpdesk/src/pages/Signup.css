@@ -50,11 +50,12 @@
 
 .signup-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 520px;
   background: white;
   padding: 40px;
   border-radius: 12px;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  animation: signupFadeIn 0.45s ease;
 }
 
 .signup-title {
@@ -71,6 +72,12 @@
 
 .signup-form .form-group {
   margin-bottom: 20px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .signup-form label {
@@ -90,6 +97,17 @@
   font-size: 14px;
   transition: all 0.3s ease;
   background: white;
+}
+
+.role-field {
+  animation: signupSlideDown 0.25s ease;
+}
+
+.field-hint {
+  margin-top: 6px;
+  color: #6B7280;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .password-field {
@@ -154,6 +172,31 @@
   transform: translateY(-1px);
 }
 
+.signup-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.submit-message {
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.submit-message.success {
+  background: #ECFDF5;
+  color: #047857;
+  border: 1px solid #A7F3D0;
+}
+
+.submit-message.error {
+  background: #FEF2F2;
+  color: #B91C1C;
+  border: 1px solid #FECACA;
+}
+
 .login-link {
   text-align: center;
   font-size: 14px;
@@ -189,5 +232,34 @@
 
   .signup-card {
     padding: 30px 20px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+@keyframes signupFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes signupSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

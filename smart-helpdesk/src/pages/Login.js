@@ -71,7 +71,7 @@ function Login() {
       }
       navigate('/dashboard');
     } catch (error) {
-      alert(error.message || 'Quick login failed');
+      alert(error.message || 'Quick login failed. Start the backend server and try again.');
     } finally {
       setLoading(false);
     }

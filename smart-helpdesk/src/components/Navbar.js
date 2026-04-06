@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Navbar.css';
 
@@ -10,15 +10,8 @@ function Navbar({ title, userName }) {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  useEffect(() => {
-    if (user.id) {
-      fetchNotifications();
-      const interval = setInterval(fetchNotifications, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [user.id]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
+    if (!user.id) return;
     try {
       const [notifResponse, countResponse] = await Promise.all([
         fetch(`http://localhost:8080/api/notifications/${user.id}`),
@@ -31,7 +24,14 @@ function Navbar({ title, userName }) {
     } catch (error) {
       console.error('Failed to fetch notifications');
     }
-  };
+  }, [user.id]);
+
+  useEffect(() => {
+    if (!user.id) return undefined;
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [user.id, fetchNotifications]);
 
   const markAsRead = async (id) => {
     try {
