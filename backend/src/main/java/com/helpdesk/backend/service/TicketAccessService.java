@@ -65,6 +65,9 @@ public class TicketAccessService {
             case HARDWARE -> Team.HARDWARE;
             case SOFTWARE -> Team.SOFTWARE;
             case NETWORK -> Team.NETWORK;
+            case SECURITY -> Team.SECURITY;
+            case HR -> Team.HR;
+            default -> throw new IllegalStateException("Unexpected value: " + ticket.getIssueType());
         };
     }
 

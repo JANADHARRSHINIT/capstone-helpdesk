@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -30,6 +31,14 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class TicketRoutingService {
+
+    private static final Map<Team, String> PRIMARY_TEAM_EMPLOYEE_EMAILS = Map.of(
+            Team.NETWORK, "john@helpdesk.com",
+            Team.SOFTWARE, "jane@helpdesk.com",
+            Team.HARDWARE, "mike@helpdesk.com",
+            Team.SECURITY, "sara@helpdesk.com",
+            Team.HR, "helen@helpdesk.com"
+    );
 
     private final UserRepository userRepository;
     private final TicketRepository ticketRepository;
@@ -127,14 +136,24 @@ public class TicketRoutingService {
             case JUNIOR -> 1;
         };
 
+        int primaryOwnerBoost = isPrimaryTeamOwner(employee, ticket.getIssueType()) ? 20 : 0;
+
         boolean urgentTicket = ticket.getPriority() == TicketPriority.CRITICAL || ticket.getPriority() == TicketPriority.HIGH;
         int urgencyBoost = urgentTicket
                 ? employee.getExperienceLevel() == ExperienceLevel.SENIOR ? 6 : employee.getExperienceLevel() == ExperienceLevel.MID ? 2 : 0
                 : 0;
 
-        int totalScore = availabilityScore * 10 + skillScore * 4 + experienceScore * 3 + urgencyBoost - (int) workload * 2;
+        int totalScore = availabilityScore * 10 + skillScore * 4 + experienceScore * 3 + primaryOwnerBoost + urgencyBoost - (int) workload * 2;
 
         return new CandidateScore(employee, workload, availabilityScore, skillScore, experienceScore, totalScore);
+    }
+
+    private boolean isPrimaryTeamOwner(UserEntity employee, IssueType issueType) {
+        if (issueType == null) {
+            return false;
+        }
+        String preferredEmail = PRIMARY_TEAM_EMPLOYEE_EMAILS.get(Team.valueOf(issueType.name()));
+        return preferredEmail != null && preferredEmail.equalsIgnoreCase(employee.getEmail());
     }
 
     private Comparator<CandidateScore> candidateComparator() {

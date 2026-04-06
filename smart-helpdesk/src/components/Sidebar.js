@@ -19,13 +19,6 @@ function Sidebar({ role }) {
   const filteredMenu = menuItems.filter(
     (item) => item.roles.includes(role) && (!item.permission || permissions[item.permission] !== false)
   );
-  const modules = [
-    { key: 'RAISE_TICKET', label: 'Raise Ticket' },
-    { key: 'SELF_SERVICE_TOOLS', label: 'Self-Service Tools' },
-    { key: 'SMART_SUGGESTIONS', label: 'Smart Suggestions' },
-    { key: 'MODEL_RETRAINING', label: 'Model Re-training' },
-    { key: 'FRAUD_ALERTS', label: 'Fraud Alerts' }
-  ];
 
   return (
     <div className="sidebar">
@@ -45,16 +38,6 @@ function Sidebar({ role }) {
           </Link>
         ))}
       </nav>
-
-      <div className="sidebar-modules">
-        <p className="sidebar-modules-title">Module Access</p>
-        {modules.map((module) => (
-          <div key={module.key} className={`sidebar-module ${permissions[module.key] ? 'enabled' : 'disabled'}`}>
-            <span>{permissions[module.key] ? 'ON' : 'OFF'}</span>
-            <small>{module.label}</small>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

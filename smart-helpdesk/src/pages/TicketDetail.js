@@ -101,13 +101,11 @@ function TicketDetail() {
 
   const handleAssignEmployee = async (employeeId) => {
     try {
-      await assignTicket(ticket.id, employeeId || null);
+      const updatedTicket = await assignTicket(ticket.id, employeeId || null);
       setAssignedEmployee(employeeId);
-      const employee = employees.find((emp) => emp.id === parseInt(employeeId, 10));
       setTicket((prev) => ({
         ...prev,
-        assignedEmployeeId: employeeId || null,
-        assignedEmployeeName: employee ? employee.name : null
+        ...updatedTicket
       }));
     } catch (error) {
       alert(error.message || 'Failed to assign employee');
@@ -236,7 +234,7 @@ function TicketDetail() {
                       <label>Assign Employee</label>
                       <select value={assignedEmployee} onChange={(e) => handleAssignEmployee(e.target.value)}>
                         <option value="">Unassigned</option>
-                        <optgroup label="Recommended ({ticket.issueType} Team)">
+                        <optgroup label={`Recommended (${ticket.issueType} Team)`}>
                           {filteredEmployees.map((emp) => (
                             <option key={emp.id} value={emp.id}>
                               {emp.name} ({emp.team || 'No Team'})

@@ -1,10 +1,10 @@
 package com.helpdesk.backend.controller;
 
 import com.helpdesk.backend.model.IssueType;
-import com.helpdesk.backend.model.TicketEntity;
 import com.helpdesk.backend.model.TicketPriority;
 import com.helpdesk.backend.repository.TicketRepository;
 import com.helpdesk.backend.service.AIService;
+import com.helpdesk.backend.service.TicketIntelligenceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,18 +18,19 @@ import java.util.stream.Collectors;
 public class AIController {
 
     private final AIService aiService;
+    private final TicketIntelligenceService ticketIntelligenceService;
     private final TicketRepository ticketRepository;
 
     @PostMapping("/analyze")
     public AnalyzeResponse analyze(@RequestBody Map<String, String> body) {
         String description = body.getOrDefault("description", "");
-        AIService.TicketAnalysis analysis = aiService.analyze(description);
+        TicketIntelligenceService.TicketDecision analysis = ticketIntelligenceService.analyze(description);
         IssueType category = analysis.issueType();
         TicketPriority priority = analysis.priority();
-        String suggestion = analysis.suggestedSolution();
+        String suggestion = aiService.suggestSolution(description);
         List<DuplicateTicket> duplicates = findDuplicates(description, category);
 
-        return new AnalyzeResponse(category, priority, analysis.confidence(), suggestion, duplicates);
+        return new AnalyzeResponse(category, priority, analysis.classificationConfidence(), suggestion, duplicates);
     }
 
     private List<DuplicateTicket> findDuplicates(String description, IssueType category) {

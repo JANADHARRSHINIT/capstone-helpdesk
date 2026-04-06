@@ -3,6 +3,8 @@ import { analyzeTicket, createTicket } from '../services/api';
 import './Chatbot.css';
 
 function Chatbot({ onTicketCreated }) {
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  const isUserModule = user?.role === 'USER';
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     { text: 'Hi! I\'m your IT support assistant. How can I help you today?', sender: 'bot' }
@@ -25,8 +27,6 @@ function Chatbot({ onTicketCreated }) {
 
     const userMessage = input.trim();
     const lower = userMessage.toLowerCase();
-    const user = JSON.parse(localStorage.getItem('user') || 'null');
-    const isUserModule = user?.role === 'USER';
 
     setMessages((prev) => [...prev, { text: userMessage, sender: 'user' }]);
     setInput('');
@@ -83,6 +83,10 @@ function Chatbot({ onTicketCreated }) {
       setIsCreatingTicket(false);
     }
   };
+
+  if (!isUserModule) {
+    return null;
+  }
 
   return (
     <>

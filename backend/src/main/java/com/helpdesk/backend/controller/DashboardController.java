@@ -20,10 +20,12 @@ import com.helpdesk.backend.security.RequestAuthorizer;
 import com.helpdesk.backend.service.TicketAccessService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/dashboard")
 @RequiredArgsConstructor
+@Slf4j
 public class DashboardController {
 
     private final TicketRepository ticketRepository;
@@ -35,12 +37,16 @@ public class DashboardController {
             @RequestParam(defaultValue = "false") boolean assignedToMe,
             HttpServletRequest request
     ) {
+        log.info("Fetching analytics with assignedToMe: {}", assignedToMe);
         UserEntity actor = ticketAccessService.requireActor(authorizer.requireUser(request));
+        log.info("Actor details: id={}, role={}", actor.getId(), actor.getRole());
         List<TicketEntity> tickets = ticketAccessService.filterVisibleTickets(actor, ticketRepository.findAll()).stream()
                 .filter(ticket -> !assignedToMe
                         || actor.getRole() != Role.EMPLOYEE
                         || ticket.getAssignedEmployee() != null && ticket.getAssignedEmployee().getId().equals(actor.getId()))
                 .toList();
+        log.info("Filtered tickets count: {}", tickets.size());
+
         long total = tickets.size();
         long open = 0;
         long inProgress = 0;
@@ -68,13 +74,11 @@ public class DashboardController {
                 Map.of("name", "Resolved/Closed", "value", closed)
         );
 
-        List<Map<String, Object>> byCategory = new ArrayList<>();
-        Arrays.stream(IssueType.values()).forEach(type -> {
-            Map<String, Object> row = new HashMap<>();
-            row.put("name", prettify(type.name()));
-            row.put("value", categoryCounts.get(type));
-            byCategory.add(row);
-        });
+        List<Map<String, Object>> byCategory = Arrays.stream(IssueType.values())
+                .map(issueType -> Map.<String, Object>of(
+                        "name", prettify(issueType.name()),
+                        "value", categoryCounts.getOrDefault(issueType, 0L)))
+                .toList();
 
         return new AnalyticsResponse(total, open, inProgress, closed, byStatus, byCategory);
     }

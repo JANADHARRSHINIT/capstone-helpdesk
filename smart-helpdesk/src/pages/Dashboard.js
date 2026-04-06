@@ -28,6 +28,8 @@ function Dashboard() {
         fetchAnalytics({ assignedToMe: isEmployee }),
         isEmployee ? fetchTickets({ assignedToMe: true }) : Promise.resolve([])
       ]);
+      console.log('Analytics Data:', analyticsData); // Debugging API response
+      console.log('Assigned Tickets:', ticketData); // Debugging API response
       setAnalytics(analyticsData);
       setAssignedTickets(ticketData);
     } catch (error) {

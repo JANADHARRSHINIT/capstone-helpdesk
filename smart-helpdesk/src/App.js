@@ -4,6 +4,7 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Issues from './pages/Issues';
 import MyIssues from './pages/MyIssues';
+import RaiseTicket from './pages/RaiseTicket';
 import TicketDetail from './pages/TicketDetail';
 import Settings from './pages/Settings';
 import Users from './pages/Users';
@@ -23,7 +24,15 @@ function App() {
         <Route path="/analytics" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/issues" element={<ProtectedRoute><Issues /></ProtectedRoute>} />
         <Route path="/my-issues" element={<ProtectedRoute><MyIssues /></ProtectedRoute>} />
-        <Route path="/create-ticket" element={<Navigate to="/my-issues" replace />} />
+        <Route
+          path="/raise-ticket"
+          element={
+            <ProtectedRoute allowedRoles={['USER']} requiredPermission="RAISE_TICKET">
+              <RaiseTicket />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/create-ticket" element={<Navigate to="/raise-ticket" replace />} />
         <Route path="/ticket/:id" element={<ProtectedRoute><TicketDetail /></ProtectedRoute>} />
         <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />

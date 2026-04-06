@@ -88,7 +88,6 @@ function MyIssues() {
                   <th>Ticket ID</th>
                   <th>Category</th>
                   <th>Team</th>
-                  <th>Assigned To</th>
                   <th>Description</th>
                   <th>Priority</th>
                   <th>Status</th>
@@ -99,7 +98,7 @@ function MyIssues() {
               <tbody>
                 {tickets.length === 0 ? (
                   <tr>
-                    <td colSpan="9" style={{ textAlign: 'center', padding: '20px' }}>
+                    <td colSpan="8" style={{ textAlign: 'center', padding: '20px' }}>
                       No tickets found. Use the Raise Ticket module or chatbot to create one.
                     </td>
                   </tr>
@@ -109,7 +108,6 @@ function MyIssues() {
                       <td>#{ticket.id}</td>
                       <td>{ticket.issueType}</td>
                       <td>{ticket.routingTeam || ticket.issueType}</td>
-                      <td>{ticket.assignedEmployeeName || 'Pending assignment'}</td>
                       <td>{ticket.description.substring(0, 50)}...</td>
                       <td><span className={`badge ${getPriorityClass(ticket.priority)}`}>{ticket.priority}</span></td>
                       <td><span className={`badge ${getStatusClass(ticket.status)}`}>{ticket.status.replace('_', ' ')}</span></td>

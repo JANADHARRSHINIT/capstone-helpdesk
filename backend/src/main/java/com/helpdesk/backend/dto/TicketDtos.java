@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import com.helpdesk.backend.model.IssueType;
-import com.helpdesk.backend.model.Team;
 import com.helpdesk.backend.model.TicketPriority;
 import com.helpdesk.backend.model.TicketAssignmentStatus;
 import com.helpdesk.backend.model.TicketStatus;
@@ -19,8 +18,6 @@ public class TicketDtos {
             IssueType issueType,
             String description,
             TicketPriority priority,
-            Team routingTeam,
-            Double classificationConfidence,
             TicketStatus status,
             TicketAssignmentStatus assignmentStatus,
             LocalDateTime assignedAt,
@@ -46,8 +43,6 @@ public class TicketDtos {
             IssueType issueType,
             String description,
             TicketPriority priority,
-            Team routingTeam,
-            Double classificationConfidence,
             TicketStatus status,
             TicketAssignmentStatus assignmentStatus,
             LocalDateTime assignedAt,
@@ -76,8 +71,18 @@ public class TicketDtos {
 
     public record CreateTicketRequest(
             Long requesterId,
-            String description
-    ) {}
+            String description,
+            TicketPriority priority,
+            IssueType issueType
+    ) {
+        public TicketPriority priority() {
+            return priority;
+        }
+
+        public IssueType issueType() {
+            return issueType;
+        }
+    }
 
     public record AnalyticsResponse(
             long totalTickets,

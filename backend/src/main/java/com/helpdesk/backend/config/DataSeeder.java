@@ -51,7 +51,7 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        UserEntity admin = upsertBasicUser("Admin User", "admin@helpdesk.com", Role.ADMIN);
+        upsertBasicUser("Admin User", "admin@helpdesk.com", Role.ADMIN);
 
         UserEntity employeeOne = upsertEmployee(
                 "John Employee", "john@helpdesk.com", "E-NET-101", Team.NETWORK,
@@ -105,6 +105,8 @@ public class DataSeeder implements CommandLineRunner {
         if (ticketRepository.count() == 0) {
             seedSampleTickets(userOne, userTwo, employeeOne, employeeTwo, employeeThree, securityEmployee, hrEmployee);
         }
+
+        ensureDemoTicketAssignments(userOne, employeeOne, employeeTwo, employeeThree, securityEmployee, hrEmployee);
     }
 
     private void seedSLAPolicies() {
@@ -258,6 +260,49 @@ public class DataSeeder implements CommandLineRunner {
                         .message("HR portal access is being checked")
                         .build()
         ));
+    }
+
+    private void ensureDemoTicketAssignments(
+            UserEntity requester,
+            UserEntity networkEmployee,
+            UserEntity softwareEmployee,
+            UserEntity hardwareEmployee,
+            UserEntity securityEmployee,
+            UserEntity hrEmployee
+    ) {
+        ensureAssignedDemoTicket(requester, networkEmployee, IssueType.NETWORK,
+                "Office wifi drops every few minutes for my laptop", TicketPriority.MEDIUM);
+        ensureAssignedDemoTicket(requester, softwareEmployee, IssueType.SOFTWARE,
+                "Email application closes unexpectedly while opening messages", TicketPriority.HIGH);
+        ensureAssignedDemoTicket(requester, hardwareEmployee, IssueType.HARDWARE,
+                "Laptop keyboard is not responding and needs hardware support", TicketPriority.MEDIUM);
+        ensureAssignedDemoTicket(requester, securityEmployee, IssueType.SECURITY,
+                "Suspicious account access alert needs security review", TicketPriority.HIGH);
+        ensureAssignedDemoTicket(requester, hrEmployee, IssueType.HR,
+                "Unable to access payroll details in the HR portal", TicketPriority.MEDIUM);
+    }
+
+    private void ensureAssignedDemoTicket(
+            UserEntity requester,
+            UserEntity employee,
+            IssueType issueType,
+            String description,
+            TicketPriority priority
+    ) {
+        boolean alreadyAssigned = ticketRepository.findByAssignedEmployeeId(employee.getId()).stream()
+                .anyMatch(ticket -> ticket.getIssueType() == issueType);
+        if (alreadyAssigned) {
+            return;
+        }
+
+        ticketRepository.save(TicketEntity.builder()
+                .requester(requester)
+                .assignedEmployee(employee)
+                .issueType(issueType)
+                .description(description)
+                .priority(priority)
+                .status(TicketStatus.OPEN)
+                .build());
     }
 
     private void seedPermissions(Role role, boolean raiseTicket, boolean selfServiceTools,

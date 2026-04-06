@@ -87,7 +87,6 @@ function Issues() {
                 <tr>
                   <th>Ticket ID</th>
                   <th>User</th>
-                  <th>Category</th>
                   <th>Team</th>
                   <th>Assigned To</th>
                   <th>Priority</th>
@@ -99,7 +98,7 @@ function Issues() {
               <tbody>
                 {tickets.length === 0 ? (
                   <tr>
-                    <td colSpan="9" style={{ textAlign: 'center', padding: '20px' }}>
+                    <td colSpan="8" style={{ textAlign: 'center', padding: '20px' }}>
                       {isEmployee ? 'No tickets are currently assigned to you.' : 'No tickets found.'}
                     </td>
                   </tr>
@@ -108,7 +107,6 @@ function Issues() {
                     <tr key={ticket.id}>
                       <td>#{ticket.id}</td>
                       <td>{ticket.customerName}</td>
-                      <td>{ticket.issueType}</td>
                       <td>{ticket.routingTeam || ticket.issueType}</td>
                       <td>{ticket.assignedEmployeeName || 'Unassigned'}</td>
                       <td><span className={`badge ${getPriorityClass(ticket.priority)}`}>{ticket.priority}</span></td>

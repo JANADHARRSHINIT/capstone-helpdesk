@@ -66,8 +66,8 @@ public class AIService {
             documentCountByType.compute(sample.issueType(), (key, count) -> count == null ? 1 : count + 1);
 
             for (String token : tokenize(sample.text())) {
-                vocabulary.merge(token, 1, Integer::sum);
-                tokenFrequencyByType.get(sample.issueType()).merge(token, 1, Integer::sum);
+                vocabulary.merge(token, 1, (oldValue, newValue) -> oldValue == null ? newValue : oldValue + newValue);
+                tokenFrequencyByType.get(sample.issueType()).merge(token, 1, (oldValue, newValue) -> oldValue == null ? newValue : oldValue + newValue);
                 tokenCountByType.compute(sample.issueType(), (key, count) -> count == null ? 1 : count + 1);
             }
         }

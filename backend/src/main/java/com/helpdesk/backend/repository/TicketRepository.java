@@ -14,4 +14,5 @@ public interface TicketRepository extends JpaRepository<TicketEntity, Long> {
     List<TicketEntity> findByStatusAndPriority(TicketStatus status, TicketPriority priority);
     long countByAssignedEmployeeIdAndStatusIn(Long assignedEmployeeId, List<TicketStatus> statuses);
     List<TicketEntity> findByAssignmentStatusIn(List<TicketAssignmentStatus> assignmentStatuses);
+    List<TicketEntity> findByAssignedEmployeeId(Long assignedEmployeeId);
 }

@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import com.helpdesk.backend.model.IssueType;
 import com.helpdesk.backend.model.Role;
 import com.helpdesk.backend.model.Team;
-import com.helpdesk.backend.model.TicketEntity;
 import com.helpdesk.backend.model.TicketPriority;
 import com.helpdesk.backend.model.TicketStatus;
 import com.helpdesk.backend.model.UserEntity;
@@ -50,7 +49,65 @@ public class TicketIntelligenceService {
             training("shared drive unavailable and network printer offline", IssueType.NETWORK, TicketPriority.HIGH),
             training("request installation of browser extension and pdf tool", IssueType.SOFTWARE, TicketPriority.LOW),
             training("keyboard replacement request for broken hardware", IssueType.HARDWARE, TicketPriority.LOW),
-            training("cannot connect to company wifi or intranet after office move", IssueType.NETWORK, TicketPriority.HIGH)
+            training("cannot connect to company wifi or intranet after office move", IssueType.NETWORK, TicketPriority.HIGH),
+            training("phishing email reported and suspicious login alert needs investigation", IssueType.SECURITY, TicketPriority.HIGH),
+            training("account access blocked by security policy or mfa verification issue", IssueType.SECURITY, TicketPriority.HIGH),
+            training("payroll portal not loading and salary slip unavailable in hr system", IssueType.HR, TicketPriority.MEDIUM),
+            training("leave approval workflow failed during employee onboarding request", IssueType.HR, TicketPriority.LOW),
+            training("desktop computer does not power on after electrical fluctuation", IssueType.HARDWARE, TicketPriority.HIGH),
+            training("usb docking station stopped detecting monitor and keyboard", IssueType.HARDWARE, TicketPriority.MEDIUM),
+            training("webcam is blurry and microphone is not detected during meetings", IssueType.HARDWARE, TicketPriority.MEDIUM),
+            training("headset audio crackles and speakers stop working intermittently", IssueType.HARDWARE, TicketPriority.MEDIUM),
+            training("laptop hinge is damaged and screen cannot stay upright", IssueType.HARDWARE, TicketPriority.HIGH),
+            training("printer toner is leaking and printed pages are smudged", IssueType.HARDWARE, TicketPriority.MEDIUM),
+            training("scanner glass is cracked and scans are unreadable", IssueType.HARDWARE, TicketPriority.HIGH),
+            training("battery drains very fast and laptop shuts off unexpectedly", IssueType.HARDWARE, TicketPriority.HIGH),
+            training("hard disk clicking noise and system fails to boot", IssueType.HARDWARE, TicketPriority.HIGH),
+            training("keyboard keys stuck after spill and typing is impossible", IssueType.HARDWARE, TicketPriority.HIGH),
+
+            training("erp application throws null pointer error after latest release", IssueType.SOFTWARE, TicketPriority.HIGH),
+            training("crm page loads blank after login in browser", IssueType.SOFTWARE, TicketPriority.MEDIUM),
+            training("excel macro stopped working after office update", IssueType.SOFTWARE, TicketPriority.MEDIUM),
+            training("browser extension fails to save passwords on company portal", IssueType.SOFTWARE, TicketPriority.MEDIUM),
+            training("invoice application freezes while generating reports", IssueType.SOFTWARE, TicketPriority.HIGH),
+            training("single sign on redirect loops continuously and user cannot login", IssueType.SOFTWARE, TicketPriority.HIGH),
+            training("database client installation request for new developer machine", IssueType.SOFTWARE, TicketPriority.LOW),
+            training("teams desktop app crashes immediately after startup", IssueType.SOFTWARE, TicketPriority.HIGH),
+            training("mobile app notifications stopped after recent update", IssueType.SOFTWARE, TicketPriority.MEDIUM),
+            training("browser shows certificate error while opening internal application", IssueType.SOFTWARE, TicketPriority.MEDIUM),
+
+            training("office wifi is connected but there is no internet access", IssueType.NETWORK, TicketPriority.HIGH),
+            training("vpn tunnel connects but internal apps remain unreachable", IssueType.NETWORK, TicketPriority.HIGH),
+            training("dns resolution fails for multiple internal hostnames", IssueType.NETWORK, TicketPriority.HIGH),
+            training("router reboot caused complete network outage on floor two", IssueType.NETWORK, TicketPriority.CRITICAL),
+            training("packet loss makes video meetings drop every few minutes", IssueType.NETWORK, TicketPriority.MEDIUM),
+            training("ethernet port in conference room is not active", IssueType.NETWORK, TicketPriority.MEDIUM),
+            training("branch office users cannot access shared drive over wan link", IssueType.NETWORK, TicketPriority.HIGH),
+            training("firewall change blocked access to vendor website", IssueType.NETWORK, TicketPriority.MEDIUM),
+            training("dns server latency causing slow intranet and login delays", IssueType.NETWORK, TicketPriority.MEDIUM),
+            training("new employee laptop needs vpn profile and wireless certificate", IssueType.NETWORK, TicketPriority.LOW),
+
+            training("employee received ransomware popup and suspicious file attachment", IssueType.SECURITY, TicketPriority.CRITICAL),
+            training("multi factor authentication code not accepted for secure portal", IssueType.SECURITY, TicketPriority.HIGH),
+            training("possible credential theft after fake login page reported", IssueType.SECURITY, TicketPriority.CRITICAL),
+            training("endpoint antivirus detected trojan on finance workstation", IssueType.SECURITY, TicketPriority.CRITICAL),
+            training("privileged account locked after repeated suspicious sign in attempts", IssueType.SECURITY, TicketPriority.HIGH),
+            training("security awareness report about suspicious usb device found", IssueType.SECURITY, TicketPriority.MEDIUM),
+            training("access request denied because compliance policy not updated", IssueType.SECURITY, TicketPriority.MEDIUM),
+            training("unknown device joined network and triggered security alert", IssueType.SECURITY, TicketPriority.HIGH),
+            training("password manager indicates account may be compromised", IssueType.SECURITY, TicketPriority.HIGH),
+            training("employee clicked phishing link and needs immediate isolation help", IssueType.SECURITY, TicketPriority.CRITICAL),
+
+            training("employee cannot submit leave request in hr portal", IssueType.HR, TicketPriority.MEDIUM),
+            training("attendance regularization form is missing for this month", IssueType.HR, TicketPriority.LOW),
+            training("new joiner onboarding checklist not assigned in hr system", IssueType.HR, TicketPriority.MEDIUM),
+            training("salary slip download failed from payroll portal", IssueType.HR, TicketPriority.MEDIUM),
+            training("benefits enrollment page shows incomplete employee details", IssueType.HR, TicketPriority.LOW),
+            training("manager approval workflow for leave is stuck pending", IssueType.HR, TicketPriority.MEDIUM),
+            training("employee id not generated after hr onboarding completion", IssueType.HR, TicketPriority.MEDIUM),
+            training("reimbursement claim rejected because hr policy data is missing", IssueType.HR, TicketPriority.LOW),
+            training("attendance device sync failed and work hours are incorrect", IssueType.HR, TicketPriority.MEDIUM),
+            training("probation confirmation form unavailable in hr portal", IssueType.HR, TicketPriority.LOW)
     );
 
     private final TicketRepository ticketRepository;
@@ -89,6 +146,21 @@ public class TicketIntelligenceService {
     }
 
     private TicketDecision ruleBasedDecision(List<String> tokens) {
+        if (containsAny(tokens, "printer", "keyboard", "mouse", "monitor", "screen", "laptop", "desktop", "charger", "battery", "scanner", "display", "touchpad", "trackpad", "dock")) {
+            return buildForcedDecision(IssueType.HARDWARE, containsAny(tokens, "broken", "damaged", "dead", "blank") ? TicketPriority.HIGH : TicketPriority.MEDIUM);
+        }
+        if (containsAny(tokens, "vpn", "router", "wifi", "network", "internet", "lan", "dns", "intranet", "connectivity", "bandwidth")) {
+            return buildForcedDecision(IssueType.NETWORK, containsAny(tokens, "down", "disconnect", "unstable", "offline") ? TicketPriority.HIGH : TicketPriority.MEDIUM);
+        }
+        if (containsAny(tokens, "payroll", "leave", "attendance", "onboarding", "salary", "hr", "policy")) {
+            return buildForcedDecision(IssueType.HR, TicketPriority.MEDIUM);
+        }
+        if (containsAny(tokens, "phishing", "mfa", "breach", "malware", "security", "fraud", "suspicious")) {
+            return buildForcedDecision(IssueType.SECURITY, TicketPriority.HIGH);
+        }
+        if (containsAny(tokens, "password", "login", "outlook", "email", "software", "application", "install", "installation", "browser", "crash", "update")) {
+            return buildForcedDecision(IssueType.SOFTWARE, containsAny(tokens, "blocked", "urgent", "crash", "failed") ? TicketPriority.HIGH : TicketPriority.MEDIUM);
+        }
         if (containsAny(tokens, "touchpad", "keyboard", "cursor", "trackpad", "pad")) {
             return buildForcedDecision(IssueType.HARDWARE, TicketPriority.MEDIUM);
         }
@@ -167,6 +239,12 @@ public class TicketIntelligenceService {
                     case "wifi", "internet" -> "network";
                     case "keyboard", "keys" -> "keyboard";
                     case "update", "updates", "updating", "upgrade", "upgrades" -> "update";
+                    case "printers" -> "printer";
+                    case "monitors" -> "monitor";
+                    case "emails" -> "email";
+                    case "routers" -> "router";
+                    case "salary" -> "payroll";
+                    case "phishing", "breach", "malware" -> "security";
                     default -> token;
                 })
                 .toList();
@@ -175,12 +253,21 @@ public class TicketIntelligenceService {
     private Team mapTeam(IssueType issueType) {
         return switch (issueType) {
             case HARDWARE -> Team.HARDWARE;
-            case NETWORK -> Team.NETWORK;
             case SOFTWARE -> Team.SOFTWARE;
+            case NETWORK -> Team.NETWORK;
+            case SECURITY -> Team.SECURITY;
+            case HR -> Team.HR;
+            default -> throw new IllegalStateException("Unexpected value: " + issueType);
         };
     }
 
     private IssueType inferFallbackIssueType(List<String> tokens) {
+        if (containsAny(tokens, "security", "phishing", "mfa", "access", "breach", "fraud", "malware")) {
+            return IssueType.SECURITY;
+        }
+        if (containsAny(tokens, "payroll", "leave", "attendance", "onboarding", "salary", "hr")) {
+            return IssueType.HR;
+        }
         if (containsAny(tokens, "network", "vpn", "router", "lan")) {
             return IssueType.NETWORK;
         }
@@ -253,7 +340,7 @@ public class TicketIntelligenceService {
                         vocabulary.put(token, nextIndex++);
                     }
                     if (seen.add(token)) {
-                        documentFrequency.merge(token, 1, Integer::sum);
+                        documentFrequency.merge(token, 1, (oldValue, newValue) -> oldValue == null ? newValue : oldValue + newValue);
                     }
                 }
             }
@@ -278,7 +365,7 @@ public class TicketIntelligenceService {
             for (String token : tokens) {
                 Integer index = vocabulary.get(token);
                 if (index != null) {
-                    termFrequency.merge(index, 1, Integer::sum);
+                    termFrequency.merge(index, 1, (oldValue, newValue) -> oldValue == null ? newValue : oldValue + newValue);
                 }
             }
 

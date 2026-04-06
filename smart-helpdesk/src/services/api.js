@@ -1,10 +1,29 @@
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
 
+function getAuthHeaders() {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user?.id || !user?.role) {
+      return {};
+    }
+    return {
+      'X-User-Id': String(user.id),
+      'X-User-Role': String(user.role)
+    };
+  } catch (_) {
+    return {};
+  }
+}
+
 async function apiRequest(path, options = {}) {
   let response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
-      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+        ...(options.headers || {})
+      },
       ...options
     });
   } catch (_) {
@@ -48,15 +67,19 @@ export function signup(payload) {
   });
 }
 
-export function fetchAnalytics() {
-  return apiRequest('/dashboard/analytics');
+export function fetchAnalytics({ assignedToMe } = {}) {
+  const params = new URLSearchParams();
+  if (assignedToMe) params.set('assignedToMe', assignedToMe);
+  const suffix = params.toString() ? `?${params.toString()}` : '';
+  return apiRequest(`/dashboard/analytics${suffix}`);
 }
 
-export function fetchTickets({ status, priority, search } = {}) {
+export function fetchTickets({ status, priority, search, assignedToMe } = {}) {
   const params = new URLSearchParams();
   if (status && status !== 'ALL') params.set('status', status);
   if (priority && priority !== 'ALL') params.set('priority', priority);
   if (search) params.set('search', search);
+  if (assignedToMe) params.set('assignedToMe', assignedToMe);
   const suffix = params.toString() ? `?${params.toString()}` : '';
   return apiRequest(`/tickets${suffix}`);
 }
